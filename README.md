@@ -34,10 +34,12 @@ Serveur de provisioning multi-tenant pour téléphones **Yealink T-Series** et *
 - Création, désactivation, réactivation et suppression d’utilisateurs via dashboard admin
 - Création de clients via dashboard admin
 - Création de sites via dashboard admin
+- Création et suppression de téléphones via dashboard admin
 - Endpoints admin :
   - `GET /api/admin/users`
   - `GET /api/admin/clients`
   - `GET /api/admin/sites`
+  - `GET /api/admin/phones`
 - Dockerfile + `railway.json` pour déploiement Railway
 - Client Prisma partagé côté serveur
 - `.env.example` et `.env.local.example`
@@ -71,6 +73,7 @@ Puis ouvrir <http://localhost:3000>
 - `GET /api/admin/users`
 - `GET /api/admin/clients`
 - `GET /api/admin/sites`
+- `GET /api/admin/phones`
 
 ## Seed initial
 
@@ -82,7 +85,7 @@ Le seed crée :
 
 ## Prochaines étapes
 
-1. CRUD téléphones
+1. édition / suppression avancée des téléphones
 2. upload de firmwares
 3. édition des règles de provisioning
 4. gabarits réels Yealink / Grandstream

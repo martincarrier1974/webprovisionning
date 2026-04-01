@@ -1,6 +1,8 @@
 import { CreateUserForm } from "@/components/auth/create-user-form";
 import { UserManagementActions } from "@/components/auth/user-management-actions";
 import { CreateClientForm } from "@/components/admin/create-client-form";
+import { CreatePhoneForm } from "@/components/admin/create-phone-form";
+import { PhoneManagementActions } from "@/components/admin/phone-management-actions";
 import { CreateSiteForm } from "@/components/admin/create-site-form";
 import { SummaryCards } from "@/components/dashboard/summary-cards";
 import { logoutAction } from "@/app/actions/auth";
@@ -12,7 +14,7 @@ export default async function DashboardPage() {
   const user = await requireAdmin();
   const stats = await getDashboardSummary();
 
-  const [users, clients, sites] = process.env.DATABASE_URL
+  const [users, clients, sites, phoneModels, phones] = process.env.DATABASE_URL
     ? await Promise.all([
         db.user.findMany({
           orderBy: { createdAt: "desc" },
@@ -54,8 +56,46 @@ export default async function DashboardPage() {
             },
           },
         }),
+        db.phoneModel.findMany({
+          where: { isActive: true },
+          orderBy: [{ vendor: "asc" }, { displayName: "asc" }],
+          select: {
+            id: true,
+            vendor: true,
+            modelCode: true,
+            displayName: true,
+          },
+        }),
+        db.phone.findMany({
+          orderBy: { createdAt: "desc" },
+          take: 12,
+          include: {
+            client: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+              },
+            },
+            site: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+              },
+            },
+            phoneModel: {
+              select: {
+                id: true,
+                vendor: true,
+                modelCode: true,
+                displayName: true,
+              },
+            },
+          },
+        }),
       ])
-    : [[], [], []];
+    : [[], [], [], [], []];
 
   return (
     <main
@@ -135,6 +175,28 @@ export default async function DashboardPage() {
           </article>
         </section>
 
+        <section style={singleSectionStyle}>
+          <article style={panelStyle}>
+            <div style={{ marginBottom: 18 }}>
+              <p style={{ color: "#93c5fd", marginBottom: 8 }}>Téléphones</p>
+              <h2 style={{ fontSize: 24, marginBottom: 8 }}>Ajouter un téléphone</h2>
+              <p style={{ color: "#cbd5e1", lineHeight: 1.7 }}>
+                Associe un téléphone à un client, un site et un modèle précis.
+              </p>
+            </div>
+            <CreatePhoneForm
+              clients={clients.map((client) => ({ id: client.id, name: client.name }))}
+              sites={sites.map((site) => ({ id: site.id, name: site.name, clientId: site.client.id }))}
+              phoneModels={phoneModels.map((model) => ({
+                id: model.id,
+                displayName: model.displayName,
+                vendor: model.vendor,
+                modelCode: model.modelCode,
+              }))}
+            />
+          </article>
+        </section>
+
         <section style={twoColSectionStyle}>
           <article style={panelStyle}>
             <div style={{ marginBottom: 18 }}>
@@ -185,7 +247,37 @@ export default async function DashboardPage() {
           </article>
         </section>
 
-        <section style={singleSectionStyle}>
+        <section style={twoColSectionStyle}>
+          <article style={panelStyle}>
+            <div style={{ marginBottom: 18 }}>
+              <p style={{ color: "#93c5fd", marginBottom: 8 }}>Téléphones récents</p>
+              <h2 style={{ fontSize: 24, marginBottom: 8 }}>Téléphones configurés</h2>
+            </div>
+
+            <div style={{ display: "grid", gap: 12 }}>
+              {phones.length === 0 ? (
+                <p style={{ color: "#cbd5e1" }}>Aucun téléphone pour le moment.</p>
+              ) : (
+                phones.map((phone) => (
+                  <div key={phone.id} style={itemCardStyle}>
+                    <div style={{ fontWeight: 700 }}>{phone.label || phone.macAddress}</div>
+                    <div style={{ color: "#cbd5e1", marginTop: 4 }}>
+                      {phone.phoneModel.vendor} · {phone.phoneModel.displayName}
+                    </div>
+                    <div style={{ color: "#cbd5e1", marginTop: 4 }}>
+                      {phone.client.name}
+                      {phone.site ? ` · ${phone.site.name}` : ""}
+                    </div>
+                    <div style={{ color: "#93c5fd", marginTop: 6, fontSize: 14 }}>
+                      MAC {phone.macAddress} · {phone.status}
+                    </div>
+                    <PhoneManagementActions phoneId={phone.id} />
+                  </div>
+                ))
+              )}
+            </div>
+          </article>
+
           <article style={panelStyle}>
             <div style={{ marginBottom: 18 }}>
               <p style={{ color: "#93c5fd", marginBottom: 8 }}>Derniers comptes</p>
