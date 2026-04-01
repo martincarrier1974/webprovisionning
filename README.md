@@ -32,7 +32,13 @@ Serveur de provisioning multi-tenant pour téléphones **Yealink T-Series** et *
 - Seed initial pour modèles Yealink T / Grandstream GXP
 - Auth admin de base (login, session, dashboard protégé, logout)
 - Création d’utilisateurs via dashboard admin
-- Endpoint admin `GET /api/admin/users`
+- Création de clients via dashboard admin
+- Création de sites via dashboard admin
+- Endpoints admin :
+  - `GET /api/admin/users`
+  - `GET /api/admin/clients`
+  - `GET /api/admin/sites`
+- Dockerfile + `railway.json` pour déploiement Railway
 - Client Prisma partagé côté serveur
 - `.env.example` et `.env.local.example`
 
@@ -63,6 +69,8 @@ Puis ouvrir <http://localhost:3000>
 - `GET /api/provisioning/yealink/:mac`
 - `GET /api/provisioning/grandstream/:mac`
 - `GET /api/admin/users`
+- `GET /api/admin/clients`
+- `GET /api/admin/sites`
 
 ## Seed initial
 
@@ -74,8 +82,8 @@ Le seed crée :
 
 ## Prochaines étapes
 
-1. CRUD clients / sites / téléphones
-2. suppression / désactivation d’utilisateurs
+1. suppression / désactivation d’utilisateurs
+2. CRUD téléphones
 3. upload de firmwares
 4. édition des règles de provisioning
 5. gabarits réels Yealink / Grandstream
