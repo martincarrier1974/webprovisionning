@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { db } from "@/lib/db";
@@ -10,7 +11,7 @@ import {
   loginSchema,
   type ActionState,
 } from "@/lib/auth/definitions";
-import { requireAdmin } from "@/lib/auth/dal";
+import { requireAdmin, requireAuth } from "@/lib/auth/dal";
 
 export async function loginAction(
   _previousState: ActionState | undefined,
@@ -106,5 +107,57 @@ export async function createUserAction(
     },
   });
 
+  revalidatePath("/dashboard");
   return { success: "Utilisateur créé avec succès." };
+}
+
+export async function disableUserAction(userId: string) {
+  const currentUser = await requireAdmin();
+
+  if (currentUser.id === userId) {
+    throw new Error("Tu ne peux pas désactiver ton propre compte.");
+  }
+
+  await db.user.update({
+    where: { id: userId },
+    data: { status: "DISABLED" },
+  });
+
+  revalidatePath("/dashboard");
+}
+
+export async function enableUserAction(userId: string) {
+  await requireAdmin();
+
+  await db.user.update({
+    where: { id: userId },
+    data: { status: "ACTIVE" },
+  });
+
+  revalidatePath("/dashboard");
+}
+
+export async function deleteUserAction(userId: string) {
+  const currentUser = await requireAdmin();
+
+  if (currentUser.id === userId) {
+    throw new Error("Tu ne peux pas supprimer ton propre compte.");
+  }
+
+  await db.user.delete({
+    where: { id: userId },
+  });
+
+  revalidatePath("/dashboard");
+}
+
+export async function updateOwnLocaleAction(locale: "fr" | "en") {
+  const currentUser = await requireAuth();
+
+  await db.user.update({
+    where: { id: currentUser.id },
+    data: { locale },
+  });
+
+  revalidatePath("/dashboard");
 }

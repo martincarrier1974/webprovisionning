@@ -5,12 +5,13 @@ import { redirect } from "next/navigation";
 
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
+import type { SessionUserRecord } from "@/lib/auth/session-user";
 
 export const getCurrentSession = cache(async () => {
   return getSession();
 });
 
-export const getCurrentUser = cache(async () => {
+export const getCurrentUser = cache(async (): Promise<SessionUserRecord | null> => {
   const session = await getCurrentSession();
 
   if (!session?.userId) {
@@ -47,7 +48,7 @@ export async function requireAuth() {
 export async function requireAdmin() {
   const user = await requireAuth();
 
-  if (!["SUPER_ADMIN", "ADMIN"].includes(user.role)) {
+  if (!user || !["SUPER_ADMIN", "ADMIN"].includes(user.role)) {
     redirect("/login");
   }
 

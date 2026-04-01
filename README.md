@@ -31,7 +31,7 @@ Serveur de provisioning multi-tenant pour téléphones **Yealink T-Series** et *
 - Migration SQL initiale générée
 - Seed initial pour modèles Yealink T / Grandstream GXP
 - Auth admin de base (login, session, dashboard protégé, logout)
-- Création d’utilisateurs via dashboard admin
+- Création, désactivation, réactivation et suppression d’utilisateurs via dashboard admin
 - Création de clients via dashboard admin
 - Création de sites via dashboard admin
 - Endpoints admin :
@@ -82,8 +82,7 @@ Le seed crée :
 
 ## Prochaines étapes
 
-1. suppression / désactivation d’utilisateurs
-2. CRUD téléphones
-3. upload de firmwares
-4. édition des règles de provisioning
-5. gabarits réels Yealink / Grandstream
+1. CRUD téléphones
+2. upload de firmwares
+3. édition des règles de provisioning
+4. gabarits réels Yealink / Grandstream

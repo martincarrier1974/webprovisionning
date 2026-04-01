@@ -1,4 +1,5 @@
 import { CreateUserForm } from "@/components/auth/create-user-form";
+import { UserManagementActions } from "@/components/auth/user-management-actions";
 import { CreateClientForm } from "@/components/admin/create-client-form";
 import { CreateSiteForm } from "@/components/admin/create-site-form";
 import { SummaryCards } from "@/components/dashboard/summary-cards";
@@ -204,6 +205,11 @@ export default async function DashboardPage() {
                     <div style={{ color: "#93c5fd", marginTop: 6, fontSize: 14 }}>
                       {item.role} · {item.status}
                     </div>
+                    <UserManagementActions
+                      userId={item.id}
+                      status={item.status}
+                      isCurrentUser={item.id === user.id}
+                    />
                   </div>
                 ))
               )}
