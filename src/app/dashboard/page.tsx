@@ -1,9 +1,13 @@
 import { CreateUserForm } from "@/components/auth/create-user-form";
 import { UserManagementActions } from "@/components/auth/user-management-actions";
+import { ClientManagementActions } from "@/components/admin/client-management-actions";
 import { CreateClientForm } from "@/components/admin/create-client-form";
+import { CreateFirmwareForm } from "@/components/admin/create-firmware-form";
 import { CreatePhoneForm } from "@/components/admin/create-phone-form";
-import { PhoneManagementActions } from "@/components/admin/phone-management-actions";
 import { CreateSiteForm } from "@/components/admin/create-site-form";
+import { EditPhoneForm } from "@/components/admin/edit-phone-form";
+import { FirmwareManagementActions } from "@/components/admin/firmware-management-actions";
+import { SiteManagementActions } from "@/components/admin/site-management-actions";
 import { SummaryCards } from "@/components/dashboard/summary-cards";
 import { logoutAction } from "@/app/actions/auth";
 import { requireAdmin } from "@/lib/auth/dal";
@@ -14,7 +18,7 @@ export default async function DashboardPage() {
   const user = await requireAdmin();
   const stats = await getDashboardSummary();
 
-  const [users, clients, sites, phoneModels, phones] = process.env.DATABASE_URL
+  const [users, clients, sites, phoneModels, phones, firmwares] = process.env.DATABASE_URL
     ? await Promise.all([
         db.user.findMany({
           orderBy: { createdAt: "desc" },
@@ -82,6 +86,7 @@ export default async function DashboardPage() {
                 id: true,
                 name: true,
                 slug: true,
+                clientId: true,
               },
             },
             phoneModel: {
@@ -94,8 +99,35 @@ export default async function DashboardPage() {
             },
           },
         }),
+        db.firmware.findMany({
+          orderBy: [{ phoneModel: { vendor: "asc" } }, { phoneModel: { displayName: "asc" } }, { version: "desc" }],
+          include: {
+            phoneModel: {
+              select: {
+                id: true,
+                vendor: true,
+                modelCode: true,
+                displayName: true,
+              },
+            },
+            _count: {
+              select: {
+                phones: true,
+              },
+            },
+          },
+        }),
       ])
-    : [[], [], [], [], []];
+    : [[], [], [], [], [], []];
+
+  const clientOptions = clients.map((client) => ({ id: client.id, name: client.name, slug: client.slug }));
+  const siteOptions = sites.map((site) => ({ id: site.id, name: site.name, clientId: site.client.id }));
+  const phoneModelOptions = phoneModels.map((model) => ({
+    id: model.id,
+    displayName: model.displayName,
+    vendor: model.vendor,
+    modelCode: model.modelCode,
+  }));
 
   return (
     <main
@@ -154,13 +186,7 @@ export default async function DashboardPage() {
                 Ajoute une succursale ou un emplacement pour un client existant.
               </p>
             </div>
-            <CreateSiteForm
-              clients={clients.map((client) => ({
-                id: client.id,
-                name: client.name,
-                slug: client.slug,
-              }))}
-            />
+            <CreateSiteForm clients={clientOptions} />
           </article>
 
           <article style={panelStyle}>
@@ -175,7 +201,7 @@ export default async function DashboardPage() {
           </article>
         </section>
 
-        <section style={singleSectionStyle}>
+        <section style={twoColSectionStyle}>
           <article style={panelStyle}>
             <div style={{ marginBottom: 18 }}>
               <p style={{ color: "#93c5fd", marginBottom: 8 }}>Téléphones</p>
@@ -184,16 +210,18 @@ export default async function DashboardPage() {
                 Associe un téléphone à un client, un site et un modèle précis.
               </p>
             </div>
-            <CreatePhoneForm
-              clients={clients.map((client) => ({ id: client.id, name: client.name }))}
-              sites={sites.map((site) => ({ id: site.id, name: site.name, clientId: site.client.id }))}
-              phoneModels={phoneModels.map((model) => ({
-                id: model.id,
-                displayName: model.displayName,
-                vendor: model.vendor,
-                modelCode: model.modelCode,
-              }))}
-            />
+            <CreatePhoneForm clients={clientOptions.map(({ id, name }) => ({ id, name }))} sites={siteOptions} phoneModels={phoneModelOptions} />
+          </article>
+
+          <article style={panelStyle}>
+            <div style={{ marginBottom: 18 }}>
+              <p style={{ color: "#93c5fd", marginBottom: 8 }}>Firmwares</p>
+              <h2 style={{ fontSize: 24, marginBottom: 8 }}>Ajouter un firmware</h2>
+              <p style={{ color: "#cbd5e1", lineHeight: 1.7 }}>
+                Déclare les versions, statuts et chemins de stockage pour chaque modèle.
+              </p>
+            </div>
+            <CreateFirmwareForm phoneModels={phoneModelOptions.map(({ id, displayName, vendor }) => ({ id, displayName, vendor }))} />
           </article>
         </section>
 
@@ -215,6 +243,7 @@ export default async function DashboardPage() {
                     <div style={{ color: "#93c5fd", marginTop: 6, fontSize: 14 }}>
                       {client._count.sites} site(s) · {client._count.phones} téléphone(s)
                     </div>
+                    <ClientManagementActions client={client} />
                   </div>
                 ))
               )}
@@ -240,6 +269,20 @@ export default async function DashboardPage() {
                     <div style={{ color: "#93c5fd", marginTop: 6, fontSize: 14 }}>
                       {site._count.phones} téléphone(s)
                     </div>
+                    <SiteManagementActions
+                      site={{
+                        id: site.id,
+                        clientId: site.client.id,
+                        name: site.name,
+                        slug: site.slug,
+                        address: site.address,
+                        city: site.city,
+                        province: site.province,
+                        country: site.country,
+                        timezone: site.timezone,
+                      }}
+                      clients={clientOptions.map(({ id, name }) => ({ id, name }))}
+                    />
                   </div>
                 ))
               )}
@@ -271,13 +314,75 @@ export default async function DashboardPage() {
                     <div style={{ color: "#93c5fd", marginTop: 6, fontSize: 14 }}>
                       MAC {phone.macAddress} · {phone.status}
                     </div>
-                    <PhoneManagementActions phoneId={phone.id} />
+                    <EditPhoneForm
+                      phone={{
+                        id: phone.id,
+                        clientId: phone.client.id,
+                        siteId: phone.site?.id ?? null,
+                        phoneModelId: phone.phoneModel.id,
+                        macAddress: phone.macAddress,
+                        label: phone.label,
+                        extensionNumber: phone.extensionNumber,
+                        sipUsername: phone.sipUsername,
+                        sipPassword: phone.sipPassword,
+                        sipServer: phone.sipServer,
+                        webPassword: phone.webPassword,
+                        adminPassword: phone.adminPassword,
+                        status: phone.status,
+                      }}
+                      clients={clientOptions.map(({ id, name }) => ({ id, name }))}
+                      sites={siteOptions.map(({ id, name }) => ({ id, name }))}
+                      phoneModels={phoneModelOptions.map(({ id, displayName, vendor }) => ({ id, displayName, vendor }))}
+                    />
                   </div>
                 ))
               )}
             </div>
           </article>
 
+          <article style={panelStyle}>
+            <div style={{ marginBottom: 18 }}>
+              <p style={{ color: "#93c5fd", marginBottom: 8 }}>Firmwares</p>
+              <h2 style={{ fontSize: 24, marginBottom: 8 }}>Firmwares configurés</h2>
+            </div>
+
+            <div style={{ display: "grid", gap: 12 }}>
+              {firmwares.length === 0 ? (
+                <p style={{ color: "#cbd5e1" }}>Aucun firmware pour le moment.</p>
+              ) : (
+                firmwares.map((firmware) => (
+                  <div key={firmware.id} style={itemCardStyle}>
+                    <div style={{ fontWeight: 700 }}>
+                      {firmware.phoneModel.vendor} · {firmware.phoneModel.displayName}
+                    </div>
+                    <div style={{ color: "#cbd5e1", marginTop: 4 }}>
+                      v{firmware.version} · {firmware.originalName}
+                    </div>
+                    <div style={{ color: "#93c5fd", marginTop: 6, fontSize: 14 }}>
+                      {firmware.status} · {firmware._count.phones} téléphone(s)
+                      {firmware.isDefault ? " · défaut" : ""}
+                    </div>
+                    <FirmwareManagementActions
+                      firmware={{
+                        id: firmware.id,
+                        phoneModelId: firmware.phoneModel.id,
+                        version: firmware.version,
+                        storageKey: firmware.storageKey,
+                        originalName: firmware.originalName,
+                        checksumSha256: firmware.checksumSha256,
+                        releaseNotes: firmware.releaseNotes,
+                        status: firmware.status,
+                        isDefault: firmware.isDefault,
+                      }}
+                    />
+                  </div>
+                ))
+              )}
+            </div>
+          </article>
+        </section>
+
+        <section style={singleSectionStyle}>
           <article style={panelStyle}>
             <div style={{ marginBottom: 18 }}>
               <p style={{ color: "#93c5fd", marginBottom: 8 }}>Derniers comptes</p>
