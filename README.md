@@ -27,14 +27,19 @@ Serveur de provisioning multi-tenant pour téléphones **Yealink T-Series** et *
 - Endpoints de provisioning dynamique Yealink / Grandstream
 - Helpers de validation vendor / MAC
 - Schéma Prisma multi-tenant initial
+- Migration SQL initiale générée
+- Seed initial pour modèles Yealink T / Grandstream GXP
 - Client Prisma partagé côté serveur
-- `.env.example` pour préparer la suite
+- `.env.example` et `.env.local.example`
 
 ## Démarrage local
 
 ```bash
+cp .env.local.example .env.local
 npm install
 npm run prisma:generate
+npm run prisma:migrate:dev
+npm run prisma:seed
 npm run dev
 ```
 
@@ -43,6 +48,7 @@ Puis ouvrir <http://localhost:3000>
 ## Endpoints disponibles
 
 - `GET /api/health`
+- `GET /api/dashboard/summary`
 - `GET /api/provisioning/yealink/:mac`
 - `GET /api/provisioning/grandstream/:mac`
 
@@ -58,11 +64,22 @@ Puis ouvrir <http://localhost:3000>
 - `provision_logs`
 - `audit_logs`
 
+## Seed initial
+
+Le seed crée un catalogue de modèles de départ pour :
+
+- Yealink T31P, T33G, T43U, T46U, T48U, T53W, T54W, T57W
+- Grandstream GXP1625, GXP1630, GXP2130, GXP2135, GXP2140, GXP2160, GXP2170
+
+Optionnel :
+
+- définir `SEED_ADMIN_EMAIL` pour créer un super-admin invité au seed
+
 ## Prochaines étapes
 
-1. Générer la migration Prisma initiale
+1. Brancher une vraie base PostgreSQL locale / Railway
 2. Implémenter auth admin globale + utilisateurs
 3. Construire le dashboard admin
-4. Gérer les firmwares via stockage objet
-5. Développer les CRUD clients / sites / téléphones
+4. Développer les CRUD clients / sites / téléphones
+5. Ajouter l’upload de firmwares
 6. Brancher les vrais templates de provisioning
