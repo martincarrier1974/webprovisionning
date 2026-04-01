@@ -1,8 +1,13 @@
 import { NextResponse } from "next/server";
 
 import { db } from "@/lib/db";
-import { isValidMac, normalizeMac, prismaVendorToSupportedVendor, renderProvisioningConfig } from "@/lib/provisioning/vendors";
 import { getProvisioningContextByMac, getResolvedProvisioningRules } from "@/lib/provisioning/rules";
+import {
+  isValidMac,
+  normalizeMac,
+  prismaVendorToSupportedVendor,
+  renderProvisioningConfig,
+} from "@/lib/provisioning/vendors";
 
 export async function GET(
   request: Request,
@@ -11,10 +16,7 @@ export async function GET(
   const { mac } = await context.params;
 
   if (!isValidMac(mac)) {
-    return NextResponse.json(
-      { ok: false, error: "Invalid MAC address" },
-      { status: 400 }
-    );
+    return NextResponse.json({ ok: false, error: "Invalid MAC address" }, { status: 400 });
   }
 
   const normalizedMac = normalizeMac(mac);
@@ -38,7 +40,7 @@ export async function GET(
   const resolved = await getResolvedProvisioningRules(phone);
   const content = renderProvisioningConfig(
     prismaVendorToSupportedVendor(phone.phoneModel.vendor),
-    normalizedMac,
+    phone,
     resolved.resolvedEntries
   );
 

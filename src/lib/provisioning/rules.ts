@@ -10,7 +10,7 @@ const sourcePriority: Record<ProvisioningSource, number> = {
   PHONE: 4,
 };
 
-type PhoneProvisioningContext = {
+export type PhoneProvisioningContext = {
   id: string;
   macAddress: string;
   clientId: string;

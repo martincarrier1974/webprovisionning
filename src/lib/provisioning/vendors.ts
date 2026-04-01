@@ -1,6 +1,6 @@
 import type { Vendor } from "@prisma/client";
 
-import type { ResolvedRuleEntry } from "@/lib/provisioning/rules";
+import type { PhoneProvisioningContext, ResolvedRuleEntry } from "@/lib/provisioning/rules";
 
 export const supportedVendors = ["yealink", "grandstream"] as const;
 
@@ -27,36 +27,85 @@ export function getProvisioningBaseUrl() {
   return appUrl && appUrl.length > 0 ? appUrl.replace(/\/$/, "") : "http://localhost:3000";
 }
 
-function defaultRulesForVendor(vendor: SupportedVendor, mac: string) {
+function formatValue(value: string) {
+  if (value === "") return '""';
+  if (/\s/.test(value) || value.includes(",") || value.includes(";")) {
+    return `"${value.replace(/"/g, '\\"')}"`;
+  }
+  return value;
+}
+
+function yesNo(value: boolean) {
+  return value ? "1" : "0";
+}
+
+function buildBaseEntries(vendor: SupportedVendor, context: PhoneProvisioningContext) {
   const baseUrl = getProvisioningBaseUrl();
+  const timezone = context.site?.timezone || context.client.timezone || "America/Toronto";
+  const firmwareUrl = context.firmwareTarget
+    ? `${baseUrl}/firmware/${context.firmwareTarget.storageKey}`
+    : null;
 
   if (vendor === "yealink") {
     return [
-      { key: "account.1.enable", value: "0" },
-      { key: "auto_provision.server.url", value: `${baseUrl}/api/provisioning/yealink/${mac}` },
-      { key: "local_time.time_zone", value: "-5" },
-      { key: "local_time.time_zone_name", value: "Eastern Time" },
-    ];
+      ["account.1.enable", context.sipUsername ? "1" : "0"],
+      ["account.1.label", context.label || context.extensionNumber || context.client.name],
+      ["account.1.display_name", context.label || context.client.name],
+      ["account.1.user_name", context.sipUsername || ""],
+      ["account.1.auth_name", context.sipUsername || ""],
+      ["account.1.password", context.sipPassword || ""],
+      ["account.1.sip_server.1.address", context.sipServer || ""],
+      ["account.1.sip_server.1.port", "5060"],
+      ["account.1.sip_server.1.transport_type", "0"],
+      ["phone_setting.admin_password", context.adminPassword || "admin"],
+      ["security.user_password", context.webPassword || "user"],
+      ["auto_provision.server.url", `${baseUrl}/api/provisioning/yealink/${context.macAddress}`],
+      ["auto_provision.repeat.enable", "1"],
+      ["auto_provision.repeat.minutes", "60"],
+      ["local_time.time_zone_name", timezone],
+      ["local_time.time_zone", "-5"],
+      ["local_time.ntp_server1", "pool.ntp.org"],
+      ["static.network.dhcp_enable", "1"],
+      ["features.dnd.allow", "1"],
+      ["call_waiting.enable", "1"],
+      ["voice.tone.country", "Canada"],
+      ["lang.gui", context.client.defaultLanguage === "fr" ? "French" : "English"],
+      ["network.ntp.time_server", "pool.ntp.org"],
+      ["features.call_log_enable", "1"],
+      ...(firmwareUrl ? [["auto_provision.firmware.url", firmwareUrl]] : []),
+    ] as Array<[string, string]>;
   }
 
   return [
-    { key: "P271", value: "0" },
-    { key: "P237", value: `${baseUrl}/api/provisioning/grandstream/${mac}` },
-    { key: "P64", value: "-5" },
-    { key: "P246", value: "1" },
-  ];
+    ["P271", context.sipUsername ? "1" : "0"],
+    ["P270", context.label || context.extensionNumber || context.client.name],
+    ["P47", context.sipUsername || ""],
+    ["P35", context.sipPassword || ""],
+    ["P47", context.sipUsername || ""],
+    ["P237", `${baseUrl}/api/provisioning/grandstream/${context.macAddress}`],
+    ["P192", context.sipServer || ""],
+    ["P35", context.sipPassword || ""],
+    ["P2", context.adminPassword || "admin"],
+    ["P64", "-5"],
+    ["P246", yesNo(Boolean(context.sipUsername))],
+    ["P212", "pool.ntp.org"],
+    ["P331", context.client.defaultLanguage === "fr" ? "fr" : "en"],
+    ["P234", yesNo(true)],
+    ["P240", yesNo(true)],
+    ...(firmwareUrl ? [["firmware.url", firmwareUrl]] : []),
+  ] as Array<[string, string]>;
 }
 
 export function renderProvisioningConfig(
   vendor: SupportedVendor,
-  mac: string,
+  context: PhoneProvisioningContext,
   resolvedEntries: ResolvedRuleEntry[] = []
 ) {
-  const normalizedMac = normalizeMac(mac);
+  const normalizedMac = normalizeMac(context.macAddress);
   const mergedRules = new Map<string, string>();
 
-  for (const rule of defaultRulesForVendor(vendor, normalizedMac)) {
-    mergedRules.set(rule.key, rule.value);
+  for (const [key, value] of buildBaseEntries(vendor, context)) {
+    mergedRules.set(key, value);
   }
 
   for (const entry of resolvedEntries) {
@@ -65,10 +114,10 @@ export function renderProvisioningConfig(
 
   const header =
     vendor === "yealink"
-      ? ["#!version:1.0.0.1", `## Auto-generated for ${normalizedMac}`]
-      : ["# Grandstream generated configuration", `# Auto-generated for ${normalizedMac}`];
+      ? ["#!version:1.0.0.1", `## Auto-generated for ${normalizedMac}`, `## Model ${context.phoneModel.displayName}`]
+      : ["# Grandstream generated configuration", `# Auto-generated for ${normalizedMac}`, `# Model ${context.phoneModel.displayName}`];
 
-  const body = Array.from(mergedRules.entries()).map(([key, value]) => `${key} = ${value}`);
+  const body = Array.from(mergedRules.entries()).map(([key, value]) => `${key} = ${formatValue(value)}`);
 
   return [...header, ...body].join("\n");
 }
