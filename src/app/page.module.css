@@ -1,0 +1,163 @@
+.page {
+  min-height: 100vh;
+  padding: 56px 24px 80px;
+  background:
+    radial-gradient(circle at top, rgba(28, 100, 242, 0.12), transparent 32%),
+    linear-gradient(180deg, #081120 0%, #0f172a 100%);
+  color: #f8fafc;
+  font-family: var(--font-geist-sans);
+}
+
+.hero,
+.grid,
+.panel {
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+.hero {
+  display: grid;
+  gap: 20px;
+  padding: 32px 0 48px;
+}
+
+.badge,
+.eyebrow {
+  width: fit-content;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: rgba(15, 23, 42, 0.55);
+  color: #93c5fd;
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hero h1 {
+  max-width: 800px;
+  font-size: clamp(2.5rem, 5vw, 4.8rem);
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.lead {
+  max-width: 760px;
+  color: #cbd5e1;
+  font-size: 1.125rem;
+  line-height: 1.7;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-top: 8px;
+}
+
+.primary,
+.secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  font-weight: 600;
+  transition:
+    transform 0.18s ease,
+    background 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.primary {
+  background: #2563eb;
+  color: white;
+}
+
+.secondary {
+  background: rgba(15, 23, 42, 0.75);
+  border-color: rgba(148, 163, 184, 0.3);
+  color: #e2e8f0;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.card,
+.panel {
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(15, 23, 42, 0.72);
+  box-shadow: 0 20px 60px rgba(2, 6, 23, 0.24);
+}
+
+.card {
+  border-radius: 20px;
+  padding: 24px;
+}
+
+.card h2,
+.panel h2 {
+  margin-bottom: 10px;
+  font-size: 1.125rem;
+}
+
+.card p,
+.panel p,
+.list {
+  color: #cbd5e1;
+  line-height: 1.7;
+}
+
+.panel {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 28px;
+  border-radius: 24px;
+  margin-top: 24px;
+  padding: 28px;
+}
+
+.list {
+  padding-left: 20px;
+}
+
+.list li + li {
+  margin-top: 10px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .primary:hover,
+  .secondary:hover {
+    transform: translateY(-1px);
+  }
+
+  .primary:hover {
+    background: #1d4ed8;
+  }
+
+  .secondary:hover {
+    background: rgba(30, 41, 59, 0.9);
+  }
+}
+
+@media (max-width: 768px) {
+  .page {
+    padding: 32px 18px 64px;
+  }
+
+  .grid,
+  .panel {
+    grid-template-columns: 1fr;
+  }
+
+  .panel {
+    padding: 22px;
+  }
+}
