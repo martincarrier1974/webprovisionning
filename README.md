@@ -10,6 +10,7 @@ Serveur de provisioning multi-tenant pour téléphones **Yealink T-Series** et *
 - Prisma
 - PostgreSQL
 - Auth custom légère (cookie session signée)
+- Export CSV téléphones
 
 ## Vision produit
 
@@ -42,6 +43,7 @@ Serveur de provisioning multi-tenant pour téléphones **Yealink T-Series** et *
 - Création de règles de provisioning hiérarchiques via dashboard admin
 - Statut de configuration du stockage objet dans le dashboard
 - Route de redirection firmware : `GET /api/firmware/[...path]`
+- Export CSV des téléphones : `GET /api/admin/phones/export`
 - Endpoints admin :
   - `GET /api/admin/users`
   - `GET /api/admin/clients`
@@ -92,6 +94,7 @@ Puis ouvrir <http://localhost:3000>
 - `GET /api/admin/clients`
 - `GET /api/admin/sites`
 - `GET /api/admin/phones`
+- `GET /api/admin/phones/export`
 - `GET /api/admin/firmwares`
 - `GET /api/admin/provisioning-rules`
 - `GET /api/admin/storage`
@@ -106,7 +109,7 @@ Le seed crée :
 
 ## Prochaines étapes
 
-1. vrai upload firmware vers stockage objet
-2. import/export CSV
+1. import CSV téléphones
+2. vrai upload firmware vers stockage objet
 3. vues détaillées de logs de provisioning
 4. améliorations UI dashboard

@@ -4,6 +4,7 @@ import { ClientManagementActions } from "@/components/admin/client-management-ac
 import { CreateClientForm } from "@/components/admin/create-client-form";
 import { CreateFirmwareForm } from "@/components/admin/create-firmware-form";
 import { CreatePhoneForm } from "@/components/admin/create-phone-form";
+import { PhoneExportCard } from "@/components/admin/phone-export-card";
 import { CreateProvisioningRuleForm } from "@/components/admin/create-provisioning-rule-form";
 import { CreateSiteForm } from "@/components/admin/create-site-form";
 import { EditPhoneForm } from "@/components/admin/edit-phone-form";
@@ -113,7 +114,8 @@ export default async function DashboardPage() {
           <article style={panelStyle}><div style={{ marginBottom: 18 }}><p style={{ color: "#93c5fd", marginBottom: 8 }}>Firmwares</p><h2 style={{ fontSize: 24, marginBottom: 8 }}>Ajouter un firmware</h2><p style={{ color: "#cbd5e1", lineHeight: 1.7 }}>Déclare les versions, statuts et chemins de stockage pour chaque modèle.</p></div><CreateFirmwareForm phoneModels={phoneModelOptions.map(({ id, displayName, vendor }) => ({ id, displayName, vendor }))} /></article>
         </section>
 
-        <section style={singleSectionStyle}>
+        <section style={twoColSectionStyle}>
+          <PhoneExportCard />
           <article style={panelStyle}><div style={{ marginBottom: 18 }}><p style={{ color: "#93c5fd", marginBottom: 8 }}>Provisioning</p><h2 style={{ fontSize: 24, marginBottom: 8 }}>Ajouter une règle hiérarchique</h2><p style={{ color: "#cbd5e1", lineHeight: 1.7 }}>Les règles sont résolues dans l’ordre : default → client → site → modèle → téléphone.</p></div><CreateProvisioningRuleForm clients={clientOptions.map(({ id, name }) => ({ id, name }))} sites={siteOptions.map(({ id, name }) => ({ id, name }))} phoneModels={phoneModelOptions.map(({ id, displayName, vendor }) => ({ id, displayName, vendor }))} phones={phoneOptions} /></article>
         </section>
 
@@ -141,4 +143,3 @@ const itemCardStyle: React.CSSProperties = { borderRadius: 14, border: "1px soli
 const secondaryButtonStyle: React.CSSProperties = { minHeight: 44, padding: "0 16px", borderRadius: 12, border: "1px solid rgba(148, 163, 184, 0.24)", background: "rgba(15, 23, 42, 0.78)", color: "#f8fafc", cursor: "pointer" };
 const threeColSectionStyle: React.CSSProperties = { display: "grid", gap: 24, gridTemplateColumns: "repeat(3, minmax(0, 1fr))" };
 const twoColSectionStyle: React.CSSProperties = { display: "grid", gap: 24, gridTemplateColumns: "repeat(2, minmax(0, 1fr))" };
-const singleSectionStyle: React.CSSProperties = { display: "grid", gap: 24 };
