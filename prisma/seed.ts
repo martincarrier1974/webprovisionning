@@ -1,5 +1,7 @@
 import { PrismaClient, UserRole, UserStatus, Vendor } from "@prisma/client";
 
+import { hashPassword } from "../src/lib/auth/password";
+
 const prisma = new PrismaClient();
 
 const phoneModels = [
@@ -21,7 +23,8 @@ const phoneModels = [
 ];
 
 async function main() {
-  const adminEmail = process.env.SEED_ADMIN_EMAIL;
+  const adminEmail = process.env.SEED_ADMIN_EMAIL?.toLowerCase();
+  const adminPassword = process.env.SEED_ADMIN_PASSWORD;
 
   for (const model of phoneModels) {
     await prisma.phoneModel.upsert({
@@ -45,14 +48,16 @@ async function main() {
       where: { email: adminEmail },
       update: {
         role: UserRole.SUPER_ADMIN,
-        status: UserStatus.INVITED,
+        status: adminPassword ? UserStatus.ACTIVE : UserStatus.INVITED,
         locale: "fr",
+        passwordHash: adminPassword ? await hashPassword(adminPassword) : undefined,
       },
       create: {
         email: adminEmail,
         role: UserRole.SUPER_ADMIN,
-        status: UserStatus.INVITED,
+        status: adminPassword ? UserStatus.ACTIVE : UserStatus.INVITED,
         locale: "fr",
+        passwordHash: adminPassword ? await hashPassword(adminPassword) : null,
       },
     });
   }

@@ -9,6 +9,7 @@ Serveur de provisioning multi-tenant pour téléphones **Yealink T-Series** et *
 - ESLint
 - Prisma
 - PostgreSQL
+- Auth custom légère (cookie session signée)
 
 ## Vision produit
 
@@ -29,6 +30,9 @@ Serveur de provisioning multi-tenant pour téléphones **Yealink T-Series** et *
 - Schéma Prisma multi-tenant initial
 - Migration SQL initiale générée
 - Seed initial pour modèles Yealink T / Grandstream GXP
+- Auth admin de base (login, session, dashboard protégé, logout)
+- Création d’utilisateurs via dashboard admin
+- Endpoint admin `GET /api/admin/users`
 - Client Prisma partagé côté serveur
 - `.env.example` et `.env.local.example`
 
@@ -45,41 +49,33 @@ npm run dev
 
 Puis ouvrir <http://localhost:3000>
 
+## Variables importantes
+
+- `DATABASE_URL`
+- `AUTH_SECRET`
+- `SEED_ADMIN_EMAIL`
+- `SEED_ADMIN_PASSWORD`
+
 ## Endpoints disponibles
 
 - `GET /api/health`
 - `GET /api/dashboard/summary`
 - `GET /api/provisioning/yealink/:mac`
 - `GET /api/provisioning/grandstream/:mac`
-
-## Modèle de données initial
-
-- `users`
-- `clients`
-- `sites`
-- `phone_models`
-- `phones`
-- `provisioning_rules`
-- `firmwares`
-- `provision_logs`
-- `audit_logs`
+- `GET /api/admin/users`
 
 ## Seed initial
 
-Le seed crée un catalogue de modèles de départ pour :
+Le seed crée :
 
-- Yealink T31P, T33G, T43U, T46U, T48U, T53W, T54W, T57W
-- Grandstream GXP1625, GXP1630, GXP2130, GXP2135, GXP2140, GXP2160, GXP2170
-
-Optionnel :
-
-- définir `SEED_ADMIN_EMAIL` pour créer un super-admin invité au seed
+- les modèles Yealink T et Grandstream GXP de départ
+- un super-admin si `SEED_ADMIN_EMAIL` est défini
+- un mot de passe hashé si `SEED_ADMIN_PASSWORD` est défini
 
 ## Prochaines étapes
 
-1. Brancher une vraie base PostgreSQL locale / Railway
-2. Implémenter auth admin globale + utilisateurs
-3. Construire le dashboard admin
-4. Développer les CRUD clients / sites / téléphones
-5. Ajouter l’upload de firmwares
-6. Brancher les vrais templates de provisioning
+1. CRUD clients / sites / téléphones
+2. suppression / désactivation d’utilisateurs
+3. upload de firmwares
+4. édition des règles de provisioning
+5. gabarits réels Yealink / Grandstream
