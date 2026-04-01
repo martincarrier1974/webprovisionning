@@ -26,6 +26,8 @@ Serveur de provisioning multi-tenant pour téléphones **Yealink T-Series** et *
 - Page d’accueil produit personnalisée
 - Endpoint `GET /api/health`
 - Endpoints de provisioning dynamique Yealink / Grandstream
+- Résolution hiérarchique des règles de provisioning : default → client → site → modèle → téléphone
+- Logs de provisioning par requête et mise à jour de `lastProvisionedAt`
 - Helpers de validation vendor / MAC
 - Schéma Prisma multi-tenant initial
 - Migration SQL initiale générée
@@ -36,12 +38,14 @@ Serveur de provisioning multi-tenant pour téléphones **Yealink T-Series** et *
 - CRUD sites (create / update / delete)
 - CRUD téléphones (create / update / delete)
 - CRUD firmwares (create / update / delete)
+- Création de règles de provisioning hiérarchiques via dashboard admin
 - Endpoints admin :
   - `GET /api/admin/users`
   - `GET /api/admin/clients`
   - `GET /api/admin/sites`
   - `GET /api/admin/phones`
   - `GET /api/admin/firmwares`
+  - `GET /api/admin/provisioning-rules`
 - Dockerfile + `railway.json` pour déploiement Railway
 - Client Prisma partagé côté serveur
 - `.env.example` et `.env.local.example`
@@ -65,6 +69,7 @@ Puis ouvrir <http://localhost:3000>
 - `AUTH_SECRET`
 - `SEED_ADMIN_EMAIL`
 - `SEED_ADMIN_PASSWORD`
+- `NEXT_PUBLIC_APP_URL` (recommandé pour les URLs de provisioning générées)
 
 ## Endpoints disponibles
 
@@ -77,6 +82,7 @@ Puis ouvrir <http://localhost:3000>
 - `GET /api/admin/sites`
 - `GET /api/admin/phones`
 - `GET /api/admin/firmwares`
+- `GET /api/admin/provisioning-rules`
 
 ## Seed initial
 
@@ -88,7 +94,7 @@ Le seed crée :
 
 ## Prochaines étapes
 
-1. relier les firmwares à un vrai stockage objet / upload
-2. éditer les règles de provisioning hiérarchiques
-3. générer les vrais gabarits Yealink / Grandstream
-4. ajouter import/export CSV
+1. vrais gabarits Yealink / Grandstream plus riches
+2. lier les firmwares à un vrai stockage objet / upload
+3. import/export CSV
+4. vues détaillées de logs de provisioning
