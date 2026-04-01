@@ -1,3 +1,6 @@
+import { SummaryCards } from "@/components/dashboard/summary-cards";
+import { getDashboardSummary } from "@/lib/dashboard/summary";
+
 import styles from "./page.module.css";
 
 const pillars = [
@@ -24,13 +27,20 @@ const pillars = [
 ];
 
 const nextSteps = [
-  "Ajouter Prisma + PostgreSQL et modéliser la structure multi-tenant.",
+  "Générer la migration Prisma initiale.",
   "Créer l’authentification admin globale et la gestion des utilisateurs.",
   "Construire les écrans Clients / Sites / Téléphones / Firmwares.",
   "Brancher la génération réelle des fichiers de provisioning par marque.",
 ];
 
-export default function Home() {
+export default async function Home() {
+  const stats = await getDashboardSummary().catch(() => ({
+    clients: 0,
+    sites: 0,
+    phoneModels: 0,
+    phones: 0,
+  }));
+
   return (
     <main className={styles.page}>
       <section className={styles.hero}>
@@ -46,10 +56,21 @@ export default function Home() {
           <a href="/api/health" className={styles.primary}>
             Tester l’API health
           </a>
-          <a href="/api/provisioning/yealink/001565A1B2C3" className={styles.secondary}>
+          <a
+            href="/api/provisioning/yealink/001565A1B2C3"
+            className={styles.secondary}
+          >
             Exemple provisioning Yealink
           </a>
         </div>
+      </section>
+
+      <section className={styles.section}>
+        <div className={styles.sectionHeader}>
+          <span className={styles.eyebrow}>Dashboard</span>
+          <h2>Vue rapide de la plateforme</h2>
+        </div>
+        <SummaryCards stats={stats} />
       </section>
 
       <section className={styles.grid}>

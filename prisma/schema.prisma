@@ -1,0 +1,245 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  MANAGER
+  VIEWER
+}
+
+enum UserStatus {
+  ACTIVE
+  INVITED
+  DISABLED
+}
+
+enum Vendor {
+  YEALINK
+  GRANDSTREAM
+}
+
+enum SiteStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum PhoneStatus {
+  STAGED
+  ACTIVE
+  DISABLED
+  RETIRED
+}
+
+enum ProvisioningSource {
+  DEFAULT
+  CLIENT
+  SITE
+  MODEL
+  PHONE
+}
+
+enum FirmwareStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+model User {
+  id             String      @id @default(cuid())
+  email          String      @unique
+  firstName      String?
+  lastName       String?
+  passwordHash   String?
+  locale         String      @default("fr")
+  role           UserRole    @default(ADMIN)
+  status         UserStatus  @default(INVITED)
+  clientId       String?
+  client         Client?     @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  lastLoginAt    DateTime?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  auditLogs      AuditLog[]
+}
+
+model Client {
+  id                String            @id @default(cuid())
+  name              String
+  slug              String            @unique
+  defaultLanguage   String            @default("fr")
+  timezone          String            @default("America/Toronto")
+  isActive          Boolean           @default(true)
+  notes             String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  users             User[]
+  sites             Site[]
+  phones            Phone[]
+  provisioningRules ProvisioningRule[]
+  auditLogs         AuditLog[]
+
+  @@index([slug])
+}
+
+model Site {
+  id                String            @id @default(cuid())
+  clientId          String
+  client            Client            @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  name              String
+  slug              String
+  address           String?
+  city              String?
+  province          String?
+  country           String?           @default("CA")
+  timezone          String?
+  status            SiteStatus        @default(ACTIVE)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  phones            Phone[]
+  provisioningRules ProvisioningRule[]
+  auditLogs         AuditLog[]
+
+  @@unique([clientId, slug])
+  @@index([clientId, status])
+}
+
+model PhoneModel {
+  id                String            @id @default(cuid())
+  vendor            Vendor
+  modelCode         String
+  displayName       String
+  lineCapacity      Int?
+  isActive          Boolean           @default(true)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  phones            Phone[]
+  provisioningRules ProvisioningRule[]
+  firmwares         Firmware[]
+
+  @@unique([vendor, modelCode])
+}
+
+model Phone {
+  id                  String              @id @default(cuid())
+  clientId            String
+  siteId              String?
+  phoneModelId        String
+  client              Client              @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  site                Site?               @relation(fields: [siteId], references: [id], onDelete: SetNull)
+  phoneModel          PhoneModel          @relation(fields: [phoneModelId], references: [id], onDelete: Restrict)
+  macAddress          String              @unique
+  label               String?
+  extensionNumber     String?
+  sipUsername         String?
+  sipPassword         String?
+  sipServer           String?
+  provisioningEnabled Boolean             @default(true)
+  webPassword         String?
+  adminPassword       String?
+  firmwareTargetId    String?
+  firmwareTarget      Firmware?           @relation(fields: [firmwareTargetId], references: [id], onDelete: SetNull)
+  status              PhoneStatus         @default(STAGED)
+  lastProvisionedAt   DateTime?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  provisioningRules   ProvisioningRule[]
+  provisionLogs       ProvisionLog[]
+
+  @@index([clientId, status])
+  @@index([siteId])
+  @@index([phoneModelId])
+}
+
+model ProvisioningRule {
+  id            String              @id @default(cuid())
+  source        ProvisioningSource
+  clientId      String?
+  siteId        String?
+  phoneModelId  String?
+  phoneId       String?
+  key           String
+  value         String
+  sortOrder     Int                 @default(0)
+  isEncrypted   Boolean             @default(false)
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  client        Client?             @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  site          Site?               @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  phoneModel    PhoneModel?         @relation(fields: [phoneModelId], references: [id], onDelete: Cascade)
+  phone         Phone?              @relation(fields: [phoneId], references: [id], onDelete: Cascade)
+
+  @@index([source, clientId])
+  @@index([source, siteId])
+  @@index([source, phoneModelId])
+  @@index([source, phoneId])
+}
+
+model Firmware {
+  id              String          @id @default(cuid())
+  phoneModelId    String
+  phoneModel      PhoneModel      @relation(fields: [phoneModelId], references: [id], onDelete: Cascade)
+  version         String
+  storageKey      String
+  originalName    String
+  fileSizeBytes   BigInt?
+  checksumSha256  String?
+  releaseNotes    String?
+  status          FirmwareStatus  @default(DRAFT)
+  isDefault       Boolean         @default(false)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  phones          Phone[]
+
+  @@unique([phoneModelId, version])
+  @@index([phoneModelId, status])
+}
+
+model ProvisionLog {
+  id             String    @id @default(cuid())
+  phoneId        String?
+  phone          Phone?    @relation(fields: [phoneId], references: [id], onDelete: SetNull)
+  vendor         Vendor
+  macAddress     String
+  ipAddress      String?
+  userAgent      String?
+  requestPath    String
+  success        Boolean   @default(true)
+  statusCode     Int
+  message        String?
+  createdAt      DateTime  @default(now())
+
+  @@index([macAddress, createdAt])
+  @@index([vendor, createdAt])
+}
+
+model AuditLog {
+  id          String    @id @default(cuid())
+  userId      String?
+  clientId    String?
+  siteId      String?
+  user        User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  client      Client?   @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  site        Site?     @relation(fields: [siteId], references: [id], onDelete: SetNull)
+  action      String
+  entityType  String
+  entityId    String?
+  metadata    Json?
+  createdAt   DateTime  @default(now())
+
+  @@index([userId, createdAt])
+  @@index([clientId, createdAt])
+  @@index([siteId, createdAt])
+}
