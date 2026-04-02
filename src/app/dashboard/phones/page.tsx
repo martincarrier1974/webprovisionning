@@ -6,6 +6,7 @@ import { PhoneExportCard } from "@/components/admin/phone-export-card";
 import { PhoneImportForm } from "@/components/admin/phone-import-form";
 import { ClientSelector } from "@/components/dashboard/client-selector";
 import { db } from "@/lib/db";
+import { translateStatus } from "@/lib/i18n/status";
 
 type Props = {
   searchParams: Promise<{ clientId?: string }>;
@@ -92,7 +93,7 @@ export default async function PhonesPage({ searchParams }: Props) {
                     {" · "}<span style={{ fontFamily: "monospace" }}>{phone.macAddress}</span>
                   </div>
                 </div>
-                <span className="item-row-badge">{phone.status}</span>
+                <span className="item-row-badge">{translateStatus(phone.status)}</span>
                 <EditPhoneForm
                   phone={{
                     id: phone.id,

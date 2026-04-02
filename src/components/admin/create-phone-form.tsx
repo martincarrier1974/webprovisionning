@@ -87,10 +87,10 @@ export function CreatePhoneForm({
       <div style={gridStyle}>
         <input name="sipServer" placeholder="SIP server" style={inputStyle} />
         <select name="status" defaultValue="STAGED" style={inputStyle}>
-          <option value="STAGED">Staged</option>
-          <option value="ACTIVE">Active</option>
-          <option value="DISABLED">Disabled</option>
-          <option value="RETIRED">Retired</option>
+          <option value="STAGED">En attente</option>
+          <option value="ACTIVE">Actif</option>
+          <option value="DISABLED">Désactivé</option>
+          <option value="RETIRED">Retiré</option>
         </select>
       </div>
 

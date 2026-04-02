@@ -2,6 +2,7 @@ import { CreateUserForm } from "@/components/auth/create-user-form";
 import { UserManagementActions } from "@/components/auth/user-management-actions";
 import { requireAdmin } from "@/lib/auth/dal";
 import { db } from "@/lib/db";
+import { translateStatus } from "@/lib/i18n/status";
 
 export default async function UsersPage() {
   const currentUser = await requireAdmin();
@@ -45,7 +46,7 @@ export default async function UsersPage() {
                     background: u.status === "ACTIVE" ? "rgba(74,222,128,0.12)" : "rgba(248,113,113,0.12)",
                     color: u.status === "ACTIVE" ? "#4ade80" : "#f87171",
                   }}>
-                    {u.status}
+                    {translateStatus(u.status)}
                   </span>
                   <UserManagementActions userId={u.id} status={u.status} isCurrentUser={u.id === currentUser.id} />
                 </div>

@@ -1,6 +1,7 @@
 import { CreateFirmwareForm } from "@/components/admin/create-firmware-form";
 import { FirmwareManagementActions } from "@/components/admin/firmware-management-actions";
 import { db } from "@/lib/db";
+import { translateStatus } from "@/lib/i18n/status";
 
 export default async function FirmwaresPage() {
   const [phoneModels, firmwares] = await Promise.all([
@@ -50,7 +51,7 @@ export default async function FirmwaresPage() {
                     <div className="item-row-title">{fw.phoneModel.vendor} · {fw.phoneModel.displayName} — v{fw.version}</div>
                     <div className="item-row-sub">
                       {fw.originalName}
-                      {` · ${fw.status}`}
+                      {` · ${translateStatus(fw.status)}`}
                       {fw.isDefault ? " · ★ défaut" : ""}
                       {` · ${fw._count.phones} téléphone(s)`}
                     </div>

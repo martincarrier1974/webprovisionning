@@ -45,9 +45,9 @@ export function FirmwareManagementActions({ firmware }: Props) {
           <textarea name="releaseNotes" defaultValue={firmware.releaseNotes ?? ""} rows={3} style={{ ...inputStyle, padding: 12 }} />
           <div style={{ display: "grid", gap: 10, gridTemplateColumns: "1fr 1fr" }}>
             <select name="status" defaultValue={firmware.status} style={inputStyle}>
-              <option value="DRAFT">Draft</option>
-              <option value="ACTIVE">Active</option>
-              <option value="ARCHIVED">Archived</option>
+              <option value="DRAFT">Brouillon</option>
+              <option value="ACTIVE">Actif</option>
+              <option value="ARCHIVED">Archivé</option>
             </select>
             <label style={{ display: "flex", alignItems: "center", gap: 8, color: "#f8fafc" }}>
               <input name="isDefault" type="checkbox" defaultChecked={firmware.isDefault} />

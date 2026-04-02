@@ -4,6 +4,7 @@ import { ClientSelector } from "@/components/dashboard/client-selector";
 import { SummaryCards } from "@/components/dashboard/summary-cards";
 import { db } from "@/lib/db";
 import { getDashboardSummary } from "@/lib/dashboard/summary";
+import { translateStatus } from "@/lib/i18n/status";
 
 type Props = {
   searchParams: Promise<{ clientId?: string }>;
@@ -80,7 +81,7 @@ export default async function DashboardPage({ searchParams }: Props) {
                       {!clientId ? ` · ${phone.client.name}` : ""}
                     </div>
                   </div>
-                  <span className="item-row-badge">{phone.status}</span>
+                  <span className="item-row-badge">{translateStatus(phone.status)}</span>
                 </div>
               ))}
             </div>

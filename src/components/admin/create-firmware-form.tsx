@@ -39,9 +39,9 @@ export function CreateFirmwareForm({ phoneModels }: { phoneModels: ModelOption[]
       <div style={gridStyle}>
         <input name="checksumSha256" placeholder="SHA256 (optionnel)" style={inputStyle} />
         <select name="status" defaultValue="DRAFT" style={inputStyle}>
-          <option value="DRAFT">Draft</option>
-          <option value="ACTIVE">Active</option>
-          <option value="ARCHIVED">Archived</option>
+          <option value="DRAFT">Brouillon</option>
+          <option value="ACTIVE">Actif</option>
+          <option value="ARCHIVED">Archivé</option>
         </select>
       </div>
 
