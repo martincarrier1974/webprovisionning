@@ -155,6 +155,7 @@ model Phone {
 
   provisioningRules   ProvisioningRule[]
   provisionLogs       ProvisionLog[]
+  programmableKeys    PhoneProgrammableKey[]
 
   @@index([clientId, status])
   @@index([siteId])
@@ -223,6 +224,23 @@ model ProvisionLog {
 
   @@index([macAddress, createdAt])
   @@index([vendor, createdAt])
+}
+
+model PhoneProgrammableKey {
+  id          String   @id @default(cuid())
+  phoneId     String
+  phone       Phone    @relation(fields: [phoneId], references: [id], onDelete: Cascade)
+  keyIndex    Int
+  account     String?
+  description String?
+  mode        String   @default("DEFAULT")
+  locked      Boolean  @default(false)
+  value       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([phoneId, keyIndex])
+  @@index([phoneId])
 }
 
 model AuditLog {

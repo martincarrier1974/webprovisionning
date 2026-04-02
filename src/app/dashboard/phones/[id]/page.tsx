@@ -17,6 +17,10 @@ export default async function PhoneConfigPage({ params }: Props) {
       site: { select: { id: true, name: true, timezone: true } },
       phoneModel: { select: { id: true, vendor: true, modelCode: true, displayName: true } },
       firmwareTarget: { select: { id: true, version: true, storageKey: true } },
+      programmableKeys: {
+        orderBy: { keyIndex: "asc" },
+        select: { id: true, keyIndex: true, account: true, description: true, mode: true, locked: true, value: true },
+      },
       provisionLogs: {
         orderBy: { createdAt: "desc" },
         take: 20,

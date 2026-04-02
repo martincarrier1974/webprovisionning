@@ -3,10 +3,22 @@
 import { useState } from "react";
 
 import { TabSip } from "./tabs/tab-sip";
+import { TabNetwork } from "./tabs/tab-network";
 import { TabSystem } from "./tabs/tab-system";
 import { TabFirmware } from "./tabs/tab-firmware";
 import { TabProvisioning } from "./tabs/tab-provisioning";
 import { TabDiagnostics } from "./tabs/tab-diagnostics";
+import { TabKeys } from "./tabs/tab-keys";
+
+type ProgrammableKey = {
+  id?: string;
+  keyIndex: number;
+  account: string | null;
+  description: string | null;
+  mode: string;
+  locked: boolean;
+  value: string | null;
+};
 
 type Phone = {
   id: string;
@@ -24,8 +36,9 @@ type Phone = {
   firmwareTarget: { id: string; version: string; storageKey: string | null } | null;
   client: { id: string; name: string; timezone: string | null; defaultLanguage: string };
   site: { id: string; name: string; timezone: string | null } | null;
-  phoneModel: { id: string; vendor: string; modelCode: string; displayName: string };
+  phoneModel: { id: string; vendor: string; modelCode: string; displayName: string; lineCapacity?: number | null };
   provisionLogs: { id: string; createdAt: Date; success: boolean; statusCode: number | null; message: string | null; requestPath: string }[];
+  programmableKeys: ProgrammableKey[];
 };
 
 type Firmware = { id: string; version: string; status: string; isDefault: boolean };
@@ -38,8 +51,10 @@ type Props = {
 
 const TABS = [
   { id: "sip", label: "Compte SIP" },
+  { id: "network", label: "Réseau" },
   { id: "system", label: "Système" },
   { id: "firmware", label: "Firmware" },
+  { id: "keys", label: "Touches program." },
   { id: "provisioning", label: "Provisioning" },
   { id: "diagnostics", label: "Diagnostics" },
 ];
@@ -49,7 +64,7 @@ export function PhoneConfigTabs({ phone, firmwares, provisioningUrl }: Props) {
 
   return (
     <div>
-      <div className="tabs">
+      <div className="tabs" style={{ overflowX: "auto" }}>
         {TABS.map((tab) => (
           <button
             key={tab.id}
@@ -62,8 +77,23 @@ export function PhoneConfigTabs({ phone, firmwares, provisioningUrl }: Props) {
       </div>
 
       {activeTab === "sip" && <TabSip phone={phone} />}
+      {activeTab === "network" && <TabNetwork phone={phone} />}
       {activeTab === "system" && <TabSystem phone={phone} />}
       {activeTab === "firmware" && <TabFirmware phone={phone} firmwares={firmwares} />}
+      {activeTab === "keys" && (
+        <TabKeys
+          phone={{ id: phone.id, phoneModel: { vendor: phone.phoneModel.vendor, lineCapacity: phone.phoneModel.lineCapacity } }}
+          initialKeys={phone.programmableKeys.map(k => ({
+            id: (k as { id?: string }).id,
+            keyIndex: k.keyIndex,
+            account: k.account ?? "Account1",
+            description: k.description ?? "",
+            mode: k.mode,
+            locked: k.locked,
+            value: k.value ?? "",
+          }))}
+        />
+      )}
       {activeTab === "provisioning" && <TabProvisioning phone={phone} provisioningUrl={provisioningUrl} />}
       {activeTab === "diagnostics" && <TabDiagnostics phone={phone} />}
     </div>
