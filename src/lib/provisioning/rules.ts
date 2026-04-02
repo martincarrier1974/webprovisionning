@@ -40,6 +40,7 @@ export type PhoneProvisioningContext = {
     vendor: Vendor;
     modelCode: string;
     displayName: string;
+    lineCapacity: number | null;
   };
   firmwareTarget: {
     id: string;
@@ -82,6 +83,7 @@ export async function getProvisioningContextByMac(macAddress: string) {
           vendor: true,
           modelCode: true,
           displayName: true,
+          lineCapacity: true,
         },
       },
       firmwareTarget: {

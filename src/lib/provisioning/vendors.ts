@@ -185,25 +185,47 @@ function buildProgrammableKeyEntries(vendor: SupportedVendor, context: PhoneProv
       if (key.locked) entries.push([`linekey.${idx}.locked`, "1"]);
     }
   } else {
-    // Grandstream MPK (P-values: P300-based for GXP2xxx, VMPKs for others)
+    // Grandstream: MPK physiques (P323+) et VMPK (P1400+) selon modèle
+    // GXP2130/2135 : 8 MPK physiques (idx 1-8) + jusqu'à 16 VMPK (idx 9-24)
+    // GXP2160      : 24 MPK physiques
+    // GXP2170      : 48 MPK physiques
+    // GXP16xx      : pas de MPK physique → VMPK seulement
+    const modelCode = context.phoneModel.modelCode.toUpperCase();
+    const physicalCapacity = context.phoneModel.lineCapacity ?? 0;
+
+    // Modèles avec VMPK (P1400+) : GXP2130, GXP2135, et les GXP1xxx
+    const hasVmpk = ["GXP2130", "GXP2135", "GXP1610", "GXP1615", "GXP1620", "GXP1625", "GXP1628", "GXP1630"].includes(modelCode);
+
+    const modeMap: Record<string, string> = {
+      BLF: "16",
+      SPEED_DIAL: "0",
+      CALL_PARK: "58",
+      INTERCOM: "8",
+      FORWARD: "7",
+      DND: "10",
+      RECORD: "17",
+      DEFAULT: "0",
+      NONE: "0",
+    };
+
     for (const key of keys) {
       const idx = key.keyIndex - 1; // 0-indexed
-      const modeMap: Record<string, string> = {
-        BLF: "16",
-        SPEED_DIAL: "0",
-        CALL_PARK: "58",
-        INTERCOM: "8",
-        FORWARD: "7",
-        DND: "10",
-        RECORD: "17",
-        DEFAULT: "0",
-        NONE: "0",
-      };
       const typeCode = modeMap[key.mode] ?? "0";
-      entries.push([`P${323 + idx * 4}`, typeCode]);       // MPK mode
-      entries.push([`P${324 + idx * 4}`, key.account ?? "1"]);   // account
-      entries.push([`P${325 + idx * 4}`, key.value ?? ""]); // value
-      entries.push([`P${326 + idx * 4}`, key.description ?? ""]); // label
+
+      if (hasVmpk && key.keyIndex > physicalCapacity) {
+        // VMPK (Virtual MPK) — P1400-based, 0-indexed global
+        const vIdx = idx; // keyIndex - 1
+        entries.push([`P${1400 + vIdx * 4}`, typeCode]);          // VMPK mode
+        entries.push([`P${1401 + vIdx * 4}`, key.account ?? "1"]); // account
+        entries.push([`P${1402 + vIdx * 4}`, key.value ?? ""]);    // value
+        entries.push([`P${1403 + vIdx * 4}`, key.description ?? ""]); // label
+      } else {
+        // MPK physique — P323-based
+        entries.push([`P${323 + idx * 4}`, typeCode]);
+        entries.push([`P${324 + idx * 4}`, key.account ?? "1"]);
+        entries.push([`P${325 + idx * 4}`, key.value ?? ""]);
+        entries.push([`P${326 + idx * 4}`, key.description ?? ""]);
+      }
     }
   }
 
