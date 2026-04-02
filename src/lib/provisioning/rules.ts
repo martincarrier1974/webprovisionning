@@ -57,6 +57,15 @@ export type PhoneProvisioningContext = {
     locked: boolean;
     value: string | null;
   }[];
+  sipAccounts: {
+    accountIndex: number;
+    label: string | null;
+    sipUsername: string | null;
+    sipPassword: string | null;
+    sipServer: string | null;
+    displayName: string | null;
+    enabled: boolean;
+  }[];
 };
 
 export async function getProvisioningContextByMac(macAddress: string) {
@@ -104,6 +113,19 @@ export async function getProvisioningContextByMac(macAddress: string) {
           mode: true,
           locked: true,
           value: true,
+        },
+      },
+      sipAccounts: {
+        where: { enabled: true },
+        orderBy: { accountIndex: "asc" as const },
+        select: {
+          accountIndex: true,
+          label: true,
+          sipUsername: true,
+          sipPassword: true,
+          sipServer: true,
+          displayName: true,
+          enabled: true,
         },
       },
     },

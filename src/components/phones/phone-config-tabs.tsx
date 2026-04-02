@@ -6,6 +6,7 @@ import { TabSip } from "./tabs/tab-sip";
 import { TabSettings } from "./tabs/tab-settings";
 import { TabMaintenance } from "./tabs/tab-maintenance";
 import { TabPhoneSettings } from "./tabs/tab-phone-settings";
+import { TabSipAccounts } from "./tabs/tab-sip-accounts";
 import { TabTemplate } from "./tabs/tab-template";
 import { TabNetwork } from "./tabs/tab-network";
 import { TabSystem } from "./tabs/tab-system";
@@ -58,6 +59,7 @@ const TABS = [
   { id: "settings",     label: "Settings" },
   { id: "maintenance", label: "Maintenance" },
   { id: "phone",       label: "Phone Settings" },
+  { id: "accounts",   label: "Comptes SIP" },
   { id: "template",   label: "Template" },
   { id: "network",    label: "Réseau" },
   { id: "system",     label: "Système" },
@@ -88,6 +90,7 @@ export function PhoneConfigTabs({ phone, firmwares, provisioningUrl }: Props) {
       {activeTab === "settings" && <TabSettings phone={{ id: phone.id, phoneModel: { vendor: phone.phoneModel.vendor } }} />}
       {activeTab === "maintenance" && <TabMaintenance phone={{ id: phone.id, phoneModel: { vendor: phone.phoneModel.vendor } }} />}
       {activeTab === "phone" && <TabPhoneSettings phone={{ id: phone.id, phoneModel: { vendor: phone.phoneModel.vendor } }} />}
+      {activeTab === "accounts" && <TabSipAccounts phone={{ id: phone.id, phoneModel: { vendor: phone.phoneModel.vendor } }} />}
       {activeTab === "template" && <TabTemplate phone={{ id: phone.id, phoneModel: { vendor: phone.phoneModel.vendor } }} />}
       {activeTab === "network" && <TabNetwork phone={{ id: phone.id, phoneModel: { vendor: phone.phoneModel.vendor } }} />}
       {activeTab === "system" && <TabSystem phone={{ id: phone.id, webPassword: phone.webPassword, adminPassword: phone.adminPassword, provisioningEnabled: phone.provisioningEnabled, phoneModel: { vendor: phone.phoneModel.vendor } }} />}

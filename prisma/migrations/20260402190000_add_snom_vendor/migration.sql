@@ -1,0 +1,1 @@
+ALTER TYPE "Vendor" ADD VALUE 'SNOM';

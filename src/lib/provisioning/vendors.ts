@@ -2,7 +2,7 @@ import type { Vendor } from "@prisma/client";
 
 import type { PhoneProvisioningContext, ResolvedRuleEntry } from "@/lib/provisioning/rules";
 
-export const supportedVendors = ["yealink", "grandstream"] as const;
+export const supportedVendors = ["yealink", "grandstream", "snom"] as const;
 
 export type SupportedVendor = (typeof supportedVendors)[number];
 
@@ -19,7 +19,9 @@ export function isValidMac(value: string): boolean {
 }
 
 export function prismaVendorToSupportedVendor(vendor: Vendor): SupportedVendor {
-  return vendor === "YEALINK" ? "yealink" : "grandstream";
+  if (vendor === "YEALINK") return "yealink";
+  if (vendor === "SNOM") return "snom";
+  return "grandstream";
 }
 
 export function getProvisioningBaseUrl() {
@@ -356,6 +358,140 @@ function buildBaseEntries(vendor: SupportedVendor, context: PhoneProvisioningCon
   ] as Array<[string, string]>;
 }
 
+function buildSnomBaseEntries(context: PhoneProvisioningContext): Record<string, string> {
+  const timezone = context.site?.timezone || context.client.timezone || "America/Toronto";
+  const baseUrl = getProvisioningBaseUrl();
+  const firmwareUrl = context.firmwareTarget
+    ? `${baseUrl}/firmware/${context.firmwareTarget.storageKey}`
+    : null;
+
+  const entries: Record<string, string> = {
+    // ── SIP Account 1 ─────────────────────────────────────────────────
+    "user_name":        context.sipUsername || "",
+    "user_realname":    context.label || context.sipUsername || "",
+    "user_pname":       context.sipUsername || "",
+    "user_pass":        context.sipPassword || "",
+    "registrar":        context.sipServer || "",
+    "proxy":            context.sipServer || "",
+    "outbound_proxy":   context.sipServer || "",
+
+    // ── SIP General ───────────────────────────────────────────────────
+    "sip_port":         "5060",
+    "sip_transport":    "0",     // 0=UDP, 1=TCP, 2=TLS
+    "user_dtmf_info":  "0",     // 0=RFC2833, 1=Info, 2=Inband
+    "user_regjitter":  "0",
+    "user_sipauth":    "0",     // 0=Standard digest
+    "user_expire":     "3600",
+
+    // ── Security ──────────────────────────────────────────────────────
+    "admin_mode_pw":   context.adminPassword || "admin",
+
+    // ── Codecs ────────────────────────────────────────────────────────
+    "user_codec1":     "2",     // 2=G.711u
+    "user_codec2":     "3",     // 3=G.711a
+    "user_codec3":     "9",     // 9=G.722
+    "user_codec4":     "4",     // 4=G.729
+    "user_codec5":     "0",
+    "user_codec6":     "0",
+
+    // ── DTMF ──────────────────────────────────────────────────────────
+    "dtmf_type":        "2",    // 2=RFC2833
+    "dtmf_ontime":      "100",
+    "dtmf_pause":       "100",
+
+    // ── Call Features ─────────────────────────────────────────────────
+    "call_waiting":         "on",
+    "transfer_on_hangup":   "off",
+    "auto_answer":          "off",
+    "mwi_notification":     "on",
+    "user_moh":             "on",
+    "missed_call_indication": "on",
+    "hold_music":           "on",
+
+    // ── NTP / Time ────────────────────────────────────────────────────
+    "ntp_server":      "pool.ntp.org",
+    "timezone":        snomTimezone(timezone),
+    "time_24":         "on",
+    "date_format":     "1",     // 1=DD/MM/YYYY
+
+    // ── Language / Display ────────────────────────────────────────────
+    "language":        context.client.defaultLanguage === "fr" ? "French" : "English",
+    "display_method":  "0",
+
+    // ── Network / VLAN ────────────────────────────────────────────────
+    "vlan_enable":     "off",
+    "qos_enable":      "on",
+    "dscp_voice":      "46",
+    "dscp_signal":     "26",
+
+    // ── Provisioning ──────────────────────────────────────────────────
+    "setting_server":  `${baseUrl}/api/provisioning/snom/`,
+    "update_policy":   "1",     // 1=Check on registration
+
+    // ── Firmware ──────────────────────────────────────────────────────
+    ...(firmwareUrl ? { "firmware_status": firmwareUrl } : {}),
+
+    // ── Web UI ────────────────────────────────────────────────────────
+    "http_user":       "user",
+    "http_pass":       context.webPassword || "user",
+    "admin_mode":      "on",
+  };
+
+  return entries;
+}
+
+function snomTimezone(tz: string): string {
+  const map: Record<string, string> = {
+    "America/Toronto": "CAN-America/Toronto",
+    "America/Montreal": "CAN-America/Montreal",
+    "America/New_York": "USA-America/New_York",
+    "America/Chicago": "USA-America/Chicago",
+    "America/Denver": "USA-America/Denver",
+    "America/Los_Angeles": "USA-America/Los_Angeles",
+    "America/Vancouver": "CAN-America/Vancouver",
+    "Europe/Paris": "EUR-Europe/Paris",
+    "Europe/London": "EUR-Europe/London",
+  };
+  return map[tz] ?? "CAN-America/Toronto";
+}
+
+function buildSipAccountEntries(vendor: SupportedVendor, context: PhoneProvisioningContext): Array<[string, string]> {
+  const extras = (context.sipAccounts ?? []).filter(a => a.enabled && a.accountIndex >= 2);
+  if (extras.length === 0) return [];
+
+  const entries: Array<[string, string]> = [];
+
+  for (const acc of extras) {
+    const i = acc.accountIndex;
+    if (vendor === "yealink") {
+      entries.push([`account.${i}.enable`, "1"]);
+      entries.push([`account.${i}.label`, acc.label || acc.sipUsername || `Account ${i}`]);
+      entries.push([`account.${i}.display_name`, acc.displayName || acc.label || acc.sipUsername || ""]);
+      entries.push([`account.${i}.user_name`, acc.sipUsername || ""]);
+      entries.push([`account.${i}.auth_name`, acc.sipUsername || ""]);
+      entries.push([`account.${i}.password`, acc.sipPassword || ""]);
+      entries.push([`account.${i}.sip_server.1.address`, acc.sipServer || ""]);
+      entries.push([`account.${i}.sip_server.1.port`, "5060"]);
+    } else if (vendor === "grandstream") {
+      // Grandstream: account 2 starts at P272 offsets (P272-P279 for account 2, etc.)
+      // Each account block is offset by 100 from account 1 (P47=username, P47+100*(i-1))
+      const offset = (i - 1) * 100;
+      entries.push([`P${47 + offset}`, acc.sipUsername || ""]);       // SIP User ID
+      entries.push([`P${34 + offset}`, acc.sipPassword || ""]);       // SIP Auth Password
+      entries.push([`P${2 + offset}`, acc.sipServer || ""]);          // SIP Server
+      entries.push([`P${270 + offset}`, acc.displayName || acc.label || ""]); // Display Name
+      entries.push([`P${35 + offset}`, "1"]);                         // Account Active
+    } else if (vendor === "snom") {
+      entries.push([`user_name${i}`, acc.sipUsername || ""]);
+      entries.push([`user_pass${i}`, acc.sipPassword || ""]);
+      entries.push([`registrar${i}`, acc.sipServer || ""]);
+      entries.push([`user_realname${i}`, acc.displayName || acc.label || ""]);
+    }
+  }
+
+  return entries;
+}
+
 function buildProgrammableKeyEntries(vendor: SupportedVendor, context: PhoneProvisioningContext): Array<[string, string]> {
   const keys = context.programmableKeys ?? [];
   if (keys.length === 0) return [];
@@ -443,6 +579,11 @@ export function renderProvisioningConfig(
     mergedRules.set(key, value);
   }
 
+  // Inject additional SIP accounts (account 2+)
+  for (const [key, value] of buildSipAccountEntries(vendor, context)) {
+    mergedRules.set(key, value);
+  }
+
   // Inject programmable key entries (can be overridden by explicit rules)
   for (const [key, value] of buildProgrammableKeyEntries(vendor, context)) {
     mergedRules.set(key, value);
@@ -450,6 +591,26 @@ export function renderProvisioningConfig(
 
   for (const entry of resolvedEntries) {
     mergedRules.set(entry.key, entry.value);
+  }
+
+  // Snom uses XML format
+  if (vendor === "snom") {
+    const snomBase = buildSnomBaseEntries(context);
+    const snomMerged: Record<string, string> = { ...snomBase };
+    // Apply resolved rules as overrides
+    for (const entry of resolvedEntries) {
+      snomMerged[entry.key] = entry.value;
+    }
+    const lines = Object.entries(snomMerged)
+      .filter(([, v]) => v !== "")
+      .map(([k, v]) => `  <${k}>${v}</${k}>`);
+    return [
+      `<?xml version="1.0" encoding="UTF-8"?>`,
+      `<!-- Auto-generated for ${normalizedMac} | ${context.phoneModel.displayName} -->`,
+      `<settings>`,
+      ...lines,
+      `</settings>`,
+    ].join("\n");
   }
 
   const header =

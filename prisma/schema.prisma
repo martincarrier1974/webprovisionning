@@ -23,6 +23,7 @@ enum UserStatus {
 enum Vendor {
   YEALINK
   GRANDSTREAM
+  SNOM
 }
 
 enum SiteStatus {
@@ -159,6 +160,7 @@ model Phone {
   provisionLogs     ProvisionLog[]
   programmableKeys  PhoneProgrammableKey[]
   templateAssigns   PhoneTemplateAssign[]
+  sipAccounts       PhoneSipAccount[]
 
   @@index([clientId, status])
   @@index([siteId])
@@ -297,6 +299,25 @@ model PhoneTemplateAssign {
   sortOrder  Int           @default(0)
 
   @@unique([phoneId, templateId])
+}
+
+model PhoneSipAccount {
+  id            String   @id @default(cuid())
+  phoneId       String
+  accountIndex  Int      @default(2)
+  label         String?
+  sipUsername   String?
+  sipPassword   String?
+  sipServer     String?
+  displayName   String?
+  enabled       Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  phone Phone @relation(fields: [phoneId], references: [id], onDelete: Cascade)
+
+  @@unique([phoneId, accountIndex])
+  @@index([phoneId])
 }
 
 model AuditLog {

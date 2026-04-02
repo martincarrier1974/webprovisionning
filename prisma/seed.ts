@@ -32,6 +32,21 @@ const phoneModels = [
   { vendor: Vendor.GRANDSTREAM, modelCode: "GXP2140", displayName: "Grandstream GXP2140", lineCapacity: 4  },
   { vendor: Vendor.GRANDSTREAM, modelCode: "GXP2160", displayName: "Grandstream GXP2160", lineCapacity: 24 },
   { vendor: Vendor.GRANDSTREAM, modelCode: "GXP2170", displayName: "Grandstream GXP2170", lineCapacity: 48 },
+
+  // ── Snom M-series (DECT) ──────────────────────────────────────────────────
+  // lineCapacity = touches programmables (0 pour DECT de base)
+  { vendor: Vendor.SNOM, modelCode: "M10",   displayName: "Snom M10",   lineCapacity: 0 },
+  { vendor: Vendor.SNOM, modelCode: "M25",   displayName: "Snom M25",   lineCapacity: 0 },
+  { vendor: Vendor.SNOM, modelCode: "M30",   displayName: "Snom M30",   lineCapacity: 0 },
+  { vendor: Vendor.SNOM, modelCode: "M55",   displayName: "Snom M55",   lineCapacity: 0 },
+  { vendor: Vendor.SNOM, modelCode: "M65",   displayName: "Snom M65",   lineCapacity: 0 },
+  { vendor: Vendor.SNOM, modelCode: "M70",   displayName: "Snom M70",   lineCapacity: 0 },
+  { vendor: Vendor.SNOM, modelCode: "M80",   displayName: "Snom M80",   lineCapacity: 0 },
+  { vendor: Vendor.SNOM, modelCode: "M85",   displayName: "Snom M85",   lineCapacity: 0 },
+  { vendor: Vendor.SNOM, modelCode: "M90",   displayName: "Snom M90",   lineCapacity: 0 },
+  { vendor: Vendor.SNOM, modelCode: "M300",  displayName: "Snom M300",  lineCapacity: 0 },
+  { vendor: Vendor.SNOM, modelCode: "M700",  displayName: "Snom M700",  lineCapacity: 0 },
+  { vendor: Vendor.SNOM, modelCode: "M900",  displayName: "Snom M900",  lineCapacity: 0 },
 ];
 
 async function main() {
