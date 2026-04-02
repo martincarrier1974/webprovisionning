@@ -137,22 +137,90 @@ function buildBaseEntries(vendor: SupportedVendor, context: PhoneProvisioningCon
     ["P324", "100"], // LCD brightness active
     ["P325", "60"],  // LCD brightness idle
     ["P195", "1"],   // Enable MWI indicator
-    // Codecs audio (GXP2xxx)
+    // ── Codecs ───────────────────────────────────────────────────────────────
     ["P57", "0"],    // Codec 1: PCMU (G.711u)
     ["P58", "8"],    // Codec 2: PCMA (G.711a)
     ["P59", "9"],    // Codec 3: G.722
     ["P60", "18"],   // Codec 4: G.729
-    // SIP port
-    ["P23", "5060"],
-    // SRTP
-    ["P183", "0"],   // 0=disabled
-    // PC port
+    ["P103", "101"], // DTMF Payload Type
+    ["P98", "1"],    // Send DTMF via RTP (RFC2833)
+    ["P97", "0"],    // Send DTMF in-audio
+    ["P99", "0"],    // Send DTMF via SIP INFO
+    ["P106", "0"],   // Silence Suppression
+    ["P137", "2"],   // Voice Frames per TX
+    ["P1300", "1"],  // Use First Matching Vocoder in 200OK SDP
+
+    // ── SIP / Registration ────────────────────────────────────────────────
+    ["P23", "5060"],  // Local SIP Port
+    ["P91", "60"],    // REGISTER Expiration (s)
+    ["P92", "20"],    // Registration Retry Wait Time (s)
+    ["P1395", "1"],   // Enable OPTIONS Keep-Alive
+    ["P1396", "30"],  // OPTIONS Keep-Alive Interval
+    ["P1397", "3"],   // OPTIONS Keep-Alive Max Retries
+    ["P1042", "0"],   // SIP Transport: 0=UDP
+    ["P1083", "0"],   // Add Auth Header on Initial REGISTER
+    ["P1081", "0"],   // Enable 100rel
+    ["P1085", "0"],   // SUBSCRIBE for MWI
+    ["P1086", "60"],  // SUBSCRIBE Expiration
+    ["P1099", "0"],   // Support SIP Instance ID
+    ["P1043", "0"],   // UNREGISTER on Reboot
+    ["P1084", "0"],   // PUBLISH for Presence
+    // Session Timer
+    ["P1170", "1"],   // Enable Session Timer
+    ["P1172", "90"],  // Min-SE
+    ["P1171", "180"], // Session Expiration
+    ["P1173", "0"],   // Force INVITE
+    // SIP T1/T2
+    ["P1120", "500"], // SIP T1 Timeout (ms)
+    ["P1121", "4000"],// SIP T2 Timeout (ms)
+    // P-Headers
+    ["P1183", "1"],   // Use P-Access-Network-Info Header
+    ["P1184", "1"],   // Use P-Emergency-Info Header
+    ["P1185", "1"],   // Use X-Grandstream-PBX Header
+    ["P1186", "0"],   // Add MAC in User-Agent
+
+    // ── Security (Account Advanced) ───────────────────────────────────────
+    ["P426", "1"],   // Accept Incoming SIP from Proxy Only
+    ["P427", "0"],   // Allow SIP Reset
+    ["P428", "0"],   // Allow Unsolicited REFER
+    ["P429", "1"],   // Authenticate Incoming INVITE
+    ["P430", "0"],   // Check Domain Certificates
+    ["P431", "0"],   // Check SIP User ID for Incoming INVITE
+    ["P432", "0"],   // Validate Certificate Chain
+    ["P433", "0"],   // Validate Incoming SIP Messages
+
+    // ── Call Settings ─────────────────────────────────────────────────────
+    ["P80", "0"],    // Anonymous Call Rejection
+    ["P81", "0"],    // Send Anonymous
+    ["P85", "60"],   // Ring Timeout (s)
+    ["P301", "1"],   // Refer-To Use Target Contact
+    ["P88", "0"],    // RFC2543 Hold
+    ["P284", "30"],  // Blind Transfer Wait Timeout (s)
+    ["P1474", "20"], // Call Forward No Answer Timeout (s)
+    ["P1475", "0"],  // Enable Local Call Features
+    ["P86", "1"],    // Ignore Alert-Info header
+
+    // ── Intercom ─────────────────────────────────────────────────────────
+    ["P1371", "1"],  // Allow Auto Answer by Call-Info/Alert-Info
+    ["P1372", "0"],  // Mute on Intercom Answer
+
+    // ── General Settings ──────────────────────────────────────────────────
+    ["P1167", "0"],  // Account Display: 0=User Name, 1=User ID
+
+    // ── SRTP ──────────────────────────────────────────────────────────────
+    ["P183", "0"],   // SRTP Mode: 0=disabled
+    ["P1330", "0"],  // Crypto Life Time
+    ["P1331", "0"],  // Symmetric RTP
+
+    // ── PC port ───────────────────────────────────────────────────────────
     ["P329", "1"],   // Enable PC port
-    // Programmable keys globals
+
+    // ── Programmable keys globals ─────────────────────────────────────────
     ["P1362", "0"],  // Key mode: 0=LineMode, 1=AccountMode
     ["P1363", "1"],  // Show keys label
     ["P1464", "**"], // BLF call-pickup prefix
-    // Firmware
+
+    // ── Firmware ──────────────────────────────────────────────────────────
     ...(firmwareUrl ? [["P232", firmwareUrl]] : []),
   ] as Array<[string, string]>;
 }
