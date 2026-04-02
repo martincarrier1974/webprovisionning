@@ -61,13 +61,15 @@ function buildBaseEntries(vendor: SupportedVendor, context: PhoneProvisioningCon
       ["security.user_password", context.webPassword || "user"],
       ["auto_provision.server.url", `${baseUrl}/api/provisioning/yealink/${context.macAddress}`],
       ["auto_provision.repeat.enable", "1"],
-      ["auto_provision.repeat.minutes", "60"],
+      ["auto_provision.repeat.minutes", "10080"],
       ["local_time.time_zone_name", timezone],
       ["local_time.time_zone", "-5"],
       ["local_time.ntp_server1", "pool.ntp.org"],
       ["static.network.dhcp_enable", "1"],
       ["features.dnd.allow", "1"],
       ["call_waiting.enable", "1"],
+      ["call_waiting.mode", "0"],
+      ["call_waiting.tone", "1"],
       ["voice.tone.country", "Canada"],
       ["lang.gui", context.client.defaultLanguage === "fr" ? "French" : "English"],
       ["network.ntp.time_server", "pool.ntp.org"],
@@ -77,22 +79,35 @@ function buildBaseEntries(vendor: SupportedVendor, context: PhoneProvisioningCon
   }
 
   return [
-    ["P271", context.sipUsername ? "1" : "0"],
-    ["P270", context.label || context.extensionNumber || context.client.name],
-    ["P47", context.sipUsername || ""],
-    ["P35", context.sipPassword || ""],
-    ["P47", context.sipUsername || ""],
-    ["P237", `${baseUrl}/api/provisioning/grandstream/${context.macAddress}`],
-    ["P192", context.sipServer || ""],
-    ["P35", context.sipPassword || ""],
-    ["P2", context.adminPassword || "admin"],
-    ["P64", "-5"],
+    // Account / SIP
+    ["P271", context.sipUsername ? "1" : "0"],   // Account active
+    ["P270", context.label || context.extensionNumber || context.client.name], // Display name
+    ["P47", context.sipUsername || ""],           // SIP User ID
+    ["P34", context.sipUsername || ""],           // Auth ID
+    ["P35", context.sipPassword || ""],           // SIP Password
+    ["P192", context.sipServer || ""],            // SIP Server
+    ["P2", context.adminPassword || "admin"],     // Admin password
+    // Provisioning
+    ["P237", `${baseUrl}/api/provisioning/grandstream/${context.macAddress}`], // Config server
+    ["P145", "3"],                                // Firmware upgrade: always check
+    // NTP / Time
+    ["P212", "pool.ntp.org"],                     // NTP server
+    ["P64", "-5"],                                // Timezone offset (EST)
     ["P246", yesNo(Boolean(context.sipUsername))],
-    ["P212", "pool.ntp.org"],
+    // Language
     ["P331", context.client.defaultLanguage === "fr" ? "fr" : "en"],
+    // Call features
+    ["P52", "1"],    // Enable Call Waiting
+    ["P55", "1"],    // Enable Transfer
+    ["P56", "1"],    // Enable Conference
+    // Network - VLAN (disabled by default; overridden by phone-level provisioning rules)
+    ["P3", "0"],     // VLAN Tag (802.1Q)
+    ["P4", "0"],     // 802.1p Priority Value
+    // Display
     ["P234", yesNo(true)],
     ["P240", yesNo(true)],
-    ...(firmwareUrl ? [["firmware.url", firmwareUrl]] : []),
+    // Firmware
+    ...(firmwareUrl ? [["P232", firmwareUrl]] : []),
   ] as Array<[string, string]>;
 }
 
