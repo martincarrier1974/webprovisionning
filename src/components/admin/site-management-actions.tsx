@@ -49,8 +49,14 @@ export function SiteManagementActions({ site, clients }: Props) {
             ))}
           </select>
           <div style={{ display: "grid", gap: 10, gridTemplateColumns: "1fr 1fr" }}>
-            <input name="name" defaultValue={site.name} style={inputStyle} />
-            <input name="slug" defaultValue={site.slug} placeholder="Identifiant" style={inputStyle} />
+            <div style={{ display: "grid", gap: 4 }}>
+              <label style={labelStyle}>Nom du site</label>
+              <input name="name" defaultValue={site.name} style={inputStyle} />
+            </div>
+            <div style={{ display: "grid", gap: 4 }}>
+              <label style={labelStyle}>Identifiant</label>
+              <input name="slug" defaultValue={site.slug} style={inputStyle} />
+            </div>
           </div>
           <div style={{ display: "grid", gap: 10, gridTemplateColumns: "1fr 1fr" }}>
             <input name="address" defaultValue={site.address ?? ""} style={inputStyle} />
@@ -92,6 +98,14 @@ export function SiteManagementActions({ site, clients }: Props) {
     </div>
   );
 }
+
+const labelStyle: React.CSSProperties = {
+  fontSize: 11,
+  color: "#888",
+  textTransform: "uppercase" as const,
+  letterSpacing: "0.05em",
+  fontWeight: 600,
+};
 
 const inputStyle: React.CSSProperties = {
   minHeight: 40,

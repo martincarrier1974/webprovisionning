@@ -12,8 +12,14 @@ export function CreateClientForm() {
   return (
     <form action={action} style={{ display: "grid", gap: 16 }}>
       <div style={gridStyle}>
-        <input name="name" placeholder="Nom du client" required style={inputStyle} />
-        <input name="slug" placeholder="Identifiant (ex: client-demo)" required style={inputStyle} />
+        <div style={{ display: "grid", gap: 4 }}>
+          <label style={labelStyle}>Nom du client</label>
+          <input name="name" placeholder="ex: BZ Telecom" required style={inputStyle} />
+        </div>
+        <div style={{ display: "grid", gap: 4 }}>
+          <label style={labelStyle}>Identifiant (unique, sans espaces)</label>
+          <input name="slug" placeholder="ex: bz-telecom" required style={inputStyle} />
+        </div>
       </div>
 
       <div style={gridStyle}>
@@ -41,6 +47,14 @@ const gridStyle: React.CSSProperties = {
   display: "grid",
   gap: 12,
   gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+};
+
+const labelStyle: React.CSSProperties = {
+  fontSize: 11,
+  color: "#888",
+  textTransform: "uppercase",
+  letterSpacing: "0.05em",
+  fontWeight: 600,
 };
 
 const inputStyle: React.CSSProperties = {

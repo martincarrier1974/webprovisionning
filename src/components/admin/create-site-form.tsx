@@ -29,8 +29,14 @@ export function CreateSiteForm({ clients }: { clients: ClientOption[] }) {
       </select>
 
       <div style={gridStyle}>
-        <input name="name" placeholder="Nom du site" required style={inputStyle} />
-        <input name="slug" placeholder="Identifiant du site" required style={inputStyle} />
+        <div style={{ display: "grid", gap: 4 }}>
+          <label style={labelStyle}>Nom du site</label>
+          <input name="name" placeholder="ex: Bureau principal" required style={inputStyle} />
+        </div>
+        <div style={{ display: "grid", gap: 4 }}>
+          <label style={labelStyle}>Identifiant (unique, sans espaces)</label>
+          <input name="slug" placeholder="ex: bureau-principal" required style={inputStyle} />
+        </div>
       </div>
 
       <div style={gridStyle}>
@@ -59,6 +65,14 @@ const gridStyle: React.CSSProperties = {
   display: "grid",
   gap: 12,
   gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+};
+
+const labelStyle: React.CSSProperties = {
+  fontSize: 11,
+  color: "#888",
+  textTransform: "uppercase",
+  letterSpacing: "0.05em",
+  fontWeight: 600,
 };
 
 const inputStyle: React.CSSProperties = {

@@ -32,8 +32,14 @@ export function ClientManagementActions({ client }: Props) {
           style={{ display: "grid", gap: 10 }}
         >
           <input type="hidden" name="id" value={client.id} />
-          <input name="name" defaultValue={client.name} style={inputStyle} />
-          <input name="slug" defaultValue={client.slug} placeholder="Identifiant" style={inputStyle} />
+          <div style={{ display: "grid", gap: 4 }}>
+            <label style={labelStyle}>Nom du client</label>
+            <input name="name" defaultValue={client.name} style={inputStyle} />
+          </div>
+          <div style={{ display: "grid", gap: 4 }}>
+            <label style={labelStyle}>Identifiant</label>
+            <input name="slug" defaultValue={client.slug} style={inputStyle} />
+          </div>
           <div style={{ display: "grid", gap: 10, gridTemplateColumns: "1fr 1fr" }}>
             <select name="defaultLanguage" defaultValue={client.defaultLanguage} style={inputStyle}>
               <option value="fr">Français</option>
@@ -73,6 +79,14 @@ export function ClientManagementActions({ client }: Props) {
     </div>
   );
 }
+
+const labelStyle: React.CSSProperties = {
+  fontSize: 11,
+  color: "#888",
+  textTransform: "uppercase" as const,
+  letterSpacing: "0.05em",
+  fontWeight: 600,
+};
 
 const inputStyle: React.CSSProperties = {
   minHeight: 40,
