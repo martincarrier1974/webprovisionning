@@ -84,7 +84,7 @@ export function PhoneConfigTabs({ phone, firmwares, provisioningUrl }: Props) {
       {activeTab === "settings" && <TabSettings phone={{ id: phone.id, phoneModel: { vendor: phone.phoneModel.vendor } }} />}
       {activeTab === "maintenance" && <TabMaintenance phone={{ id: phone.id, phoneModel: { vendor: phone.phoneModel.vendor } }} />}
       {activeTab === "network" && <TabNetwork phone={{ id: phone.id, phoneModel: { vendor: phone.phoneModel.vendor } }} />}
-      {activeTab === "system" && <TabSystem phone={phone} />}
+      {activeTab === "system" && <TabSystem phone={{ id: phone.id, webPassword: phone.webPassword, adminPassword: phone.adminPassword, provisioningEnabled: phone.provisioningEnabled, phoneModel: { vendor: phone.phoneModel.vendor } }} />}
       {activeTab === "firmware" && <TabFirmware phone={phone} firmwares={firmwares} />}
       {activeTab === "keys" && (
         <TabKeys
