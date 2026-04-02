@@ -65,7 +65,7 @@ export default async function PhonesPage({ searchParams }: Props) {
             <div className="card">
               <div className="card-title">CSV</div>
               <div className="card-heading">Importer des téléphones</div>
-              <p className="card-desc">Colonnes requises : <code>mac_address</code>, <code>client_slug</code>, <code>model_code</code>.</p>
+              <p className="card-desc">Colonnes requises : <code>mac_address</code>, <code>client_identifiant</code>, <code>model_code</code>.</p>
               <PhoneImportForm />
             </div>
           </div>

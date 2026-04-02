@@ -23,14 +23,14 @@ export function CreateSiteForm({ clients }: { clients: ClientOption[] }) {
         </option>
         {clients.map((client) => (
           <option key={client.id} value={client.id}>
-            {client.name} ({client.slug})
+            {client.name} ({client.id})
           </option>
         ))}
       </select>
 
       <div style={gridStyle}>
         <input name="name" placeholder="Nom du site" required style={inputStyle} />
-        <input name="slug" placeholder="Slug du site" required style={inputStyle} />
+        <input name="slug" placeholder="Identifiant du site" required style={inputStyle} />
       </div>
 
       <div style={gridStyle}>

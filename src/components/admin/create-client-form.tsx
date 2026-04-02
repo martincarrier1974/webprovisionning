@@ -13,7 +13,7 @@ export function CreateClientForm() {
     <form action={action} style={{ display: "grid", gap: 16 }}>
       <div style={gridStyle}>
         <input name="name" placeholder="Nom du client" required style={inputStyle} />
-        <input name="slug" placeholder="Slug (ex: client-demo)" required style={inputStyle} />
+        <input name="slug" placeholder="Identifiant (ex: client-demo)" required style={inputStyle} />
       </div>
 
       <div style={gridStyle}>

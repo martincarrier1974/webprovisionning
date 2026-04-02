@@ -33,7 +33,7 @@ export function ClientManagementActions({ client }: Props) {
         >
           <input type="hidden" name="id" value={client.id} />
           <input name="name" defaultValue={client.name} style={inputStyle} />
-          <input name="slug" defaultValue={client.slug} style={inputStyle} />
+          <input name="slug" defaultValue={client.slug} placeholder="Identifiant" style={inputStyle} />
           <div style={{ display: "grid", gap: 10, gridTemplateColumns: "1fr 1fr" }}>
             <select name="defaultLanguage" defaultValue={client.defaultLanguage} style={inputStyle}>
               <option value="fr">Français</option>

@@ -50,7 +50,7 @@ export function SiteManagementActions({ site, clients }: Props) {
           </select>
           <div style={{ display: "grid", gap: 10, gridTemplateColumns: "1fr 1fr" }}>
             <input name="name" defaultValue={site.name} style={inputStyle} />
-            <input name="slug" defaultValue={site.slug} style={inputStyle} />
+            <input name="slug" defaultValue={site.slug} placeholder="Identifiant" style={inputStyle} />
           </div>
           <div style={{ display: "grid", gap: 10, gridTemplateColumns: "1fr 1fr" }}>
             <input name="address" defaultValue={site.address ?? ""} style={inputStyle} />

@@ -37,7 +37,7 @@ export default async function ClientsPage() {
                   <div style={{ display: "flex", width: "100%", justifyContent: "space-between", alignItems: "center" }}>
                     <div className="item-row-info">
                       <div className="item-row-title">{client.name}</div>
-                      <div className="item-row-sub">{client.slug} · {client._count.sites} site(s) · {client._count.phones} téléphone(s)</div>
+                      <div className="item-row-sub">ID : {client.slug} · {client._count.sites} site(s) · {client._count.phones} téléphone(s)</div>
                     </div>
                     <ClientManagementActions client={client} />
                   </div>

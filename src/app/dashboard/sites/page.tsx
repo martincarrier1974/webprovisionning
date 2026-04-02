@@ -61,7 +61,7 @@ export default async function SitesPage({ searchParams }: Props) {
                   <div className="item-row-info">
                     <div className="item-row-title">{site.name}</div>
                     <div className="item-row-sub">
-                      {site.client.name} · {site.slug}
+                      {site.client.name} · ID : {site.slug}
                       {site.city ? ` · ${site.city}` : ""}
                       {` · ${site._count.phones} téléphone(s)`}
                     </div>
