@@ -117,16 +117,44 @@ function buildBaseEntries(vendor: SupportedVendor, context: PhoneProvisioningCon
     // Provisioning
     ["P237", `${baseUrl}/api/provisioning/grandstream/${context.macAddress}`], // Config server
     ["P145", "3"],                                // Firmware upgrade: always check
-    // NTP / Time
+    // ── NTP / Time / Language ─────────────────────────────────────────────
     ["P212", "pool.ntp.org"],                     // NTP server
+    ["P213", "1440"],                             // NTP Update Interval (min)
     ["P64", "-5"],                                // Timezone offset (EST)
+    ["P75", "0"],    // Allow DHCP Option 2 override timezone: No
     ["P246", yesNo(Boolean(context.sipUsername))],
+    ["P314", "1"],   // Date format: yyyy-mm-dd
+    ["P315", "0"],   // Time format: 12h
+    ["P1305", "1"],  // Show Date and Time
     // Language
     ["P331", context.client.defaultLanguage === "fr" ? "fr" : "en"],
+    ["P1351", "1"],  // Auto language download
     // ── Call features (global) ────────────────────────────────────────────
     ["P52", "1"],    // Enable Call Waiting
+    ["P53", "1"],    // Enable Call Waiting Tone
+    ["P54", "1"],    // Escape # as %23 in SIP URI
     ["P55", "1"],    // Enable Transfer
     ["P56", "1"],    // Enable Conference
+    ["P102", "30"],  // Off-hook Timeout (s)
+    ["P109", "0"],   // Record Mode
+    ["P110", "0"],   // Use Quick IP Call Mode
+    // General Settings
+    ["P1390", "20"], // Keep-Alive Interval (s)
+    ["P1391", "5004"],// Local RTP Port
+    ["P1392", "200"],// Local RTP Port Range
+    ["P1393", "1"],  // Enable In-call DTMF Display
+    ["P1394", "0"],  // Use Random Port
+    // Ring Tone
+    ["P1500", "0"],  // Lock Volume
+    ["P1501", "5"],  // Notification Tone Volume
+    // LDAP defaults
+    ["P1600", "389"],// LDAP Port
+    ["P1601", "3"],  // LDAP Version: version3
+    ["P1602", "50"], // LDAP Max Hits
+    ["P1603", "30"], // LDAP Search Timeout
+    ["P1604", "0"],  // LDAP Sort Results
+    ["P1605", "0"],  // LDAP Lookup Incoming Calls
+    ["P1606", "0"],  // LDAP Lookup Outgoing Calls
     // Settings > Call Features
     ["P1400", "1"],  // Enable Incoming Call Popup
     ["P1401", "0"],  // Allow Incoming Call before Ringing
