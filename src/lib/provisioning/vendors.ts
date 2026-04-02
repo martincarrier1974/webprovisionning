@@ -123,10 +123,26 @@ function buildBaseEntries(vendor: SupportedVendor, context: PhoneProvisioningCon
     ["P246", yesNo(Boolean(context.sipUsername))],
     // Language
     ["P331", context.client.defaultLanguage === "fr" ? "fr" : "en"],
-    // Call features
+    // ── Call features (global) ────────────────────────────────────────────
     ["P52", "1"],    // Enable Call Waiting
     ["P55", "1"],    // Enable Transfer
     ["P56", "1"],    // Enable Conference
+    // Settings > Call Features
+    ["P1400", "1"],  // Enable Incoming Call Popup
+    ["P1401", "0"],  // Allow Incoming Call before Ringing
+    ["P1402", "0"],  // Enable Auto Redial
+    ["P1403", "20"], // Auto Redial Interval (s)
+    ["P1404", "10"], // Auto Redial Times
+    ["P1405", "1"],  // Enable Busy Tone on Remote Disconnect
+    ["P1407", "0"],  // Enable Direct IP Call
+    ["P1408", "1"],  // Enable DND Feature
+    ["P1410", "0"],  // Enable Missed Call Notification
+    ["P1411", "0"],  // Hide BLF Remote Status
+    ["P1412", "0"],  // Ring for Call Waiting
+    ["P1413", "0"],  // Show SIP Error Response
+    ["P1414", "1"],  // Onhook Dial Barging
+    ["P1415", "1"],  // Predictive Dialing Feature
+    ["P1418", "10"], // Instant Message Popup Timeout During Call (s)
     // Network - VLAN (disabled by default; overridden by phone-level provisioning rules)
     ["P3", "0"],     // VLAN Tag (802.1Q)
     ["P4", "0"],     // 802.1p Priority Value
@@ -215,9 +231,21 @@ function buildBaseEntries(vendor: SupportedVendor, context: PhoneProvisioningCon
     // ── PC port ───────────────────────────────────────────────────────────
     ["P329", "1"],   // Enable PC port
 
+    // ── Preferences ──────────────────────────────────────────────────────
+    ["P213", "1440"],// NTP Update Interval (min)
+    ["P1305", "0"],  // Show Date On Status Bar
+
     // ── Programmable keys globals ─────────────────────────────────────────
     ["P1362", "0"],  // Key mode: 0=LineMode, 1=AccountMode
     ["P1363", "1"],  // Show keys label
+    ["P1364", "0"],  // Show Label Background
+    ["P1365", "0"],  // Use Long Label
+    ["P1366", "0"],  // Show VPK Icon
+    ["P1367", "0"],  // Enable Transfer via Non-Transfer Programmable Keys
+    ["P1368", "1"],  // More Softkey Display Mode: 1=Menu
+    ["P1369", "1"],  // Custom Call Screen Softkey Layout
+    ["P1370", "0"],  // Enforce Softkey Layout Position
+    ["P1371", "0"],  // Show Target Softkey
     ["P1464", "**"], // BLF call-pickup prefix
 
     // ── Firmware ──────────────────────────────────────────────────────────
