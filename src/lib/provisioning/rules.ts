@@ -47,6 +47,14 @@ export type PhoneProvisioningContext = {
     storageKey: string;
     originalName: string;
   } | null;
+  programmableKeys: {
+    keyIndex: number;
+    account: string | null;
+    description: string | null;
+    mode: string;
+    locked: boolean;
+    value: string | null;
+  }[];
 };
 
 export async function getProvisioningContextByMac(macAddress: string) {
@@ -82,6 +90,17 @@ export async function getProvisioningContextByMac(macAddress: string) {
           version: true,
           storageKey: true,
           originalName: true,
+        },
+      },
+      programmableKeys: {
+        orderBy: { keyIndex: "asc" as const },
+        select: {
+          keyIndex: true,
+          account: true,
+          description: true,
+          mode: true,
+          locked: true,
+          value: true,
         },
       },
     },

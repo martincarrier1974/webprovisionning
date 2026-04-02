@@ -96,6 +96,59 @@ function buildBaseEntries(vendor: SupportedVendor, context: PhoneProvisioningCon
   ] as Array<[string, string]>;
 }
 
+function buildProgrammableKeyEntries(vendor: SupportedVendor, context: PhoneProvisioningContext): Array<[string, string]> {
+  const keys = context.programmableKeys ?? [];
+  if (keys.length === 0) return [];
+
+  const entries: Array<[string, string]> = [];
+
+  if (vendor === "yealink") {
+    for (const key of keys) {
+      const idx = key.keyIndex;
+      const modeMap: Record<string, string> = {
+        BLF: "16",
+        SPEED_DIAL: "13",
+        CALL_PARK: "19",
+        INTERCOM: "5",
+        FORWARD: "4",
+        DND: "6",
+        RECORD: "11",
+        DEFAULT: "0",
+        NONE: "0",
+      };
+      const typeCode = modeMap[key.mode] ?? "0";
+      entries.push([`linekey.${idx}.type`, typeCode]);
+      entries.push([`linekey.${idx}.value`, key.value ?? ""]);
+      entries.push([`linekey.${idx}.label`, key.description ?? ""]);
+      entries.push([`linekey.${idx}.line`, "1"]);
+      if (key.locked) entries.push([`linekey.${idx}.locked`, "1"]);
+    }
+  } else {
+    // Grandstream MPK (P-values: P300-based for GXP2xxx, VMPKs for others)
+    for (const key of keys) {
+      const idx = key.keyIndex - 1; // 0-indexed
+      const modeMap: Record<string, string> = {
+        BLF: "16",
+        SPEED_DIAL: "0",
+        CALL_PARK: "58",
+        INTERCOM: "8",
+        FORWARD: "7",
+        DND: "10",
+        RECORD: "17",
+        DEFAULT: "0",
+        NONE: "0",
+      };
+      const typeCode = modeMap[key.mode] ?? "0";
+      entries.push([`P${323 + idx * 4}`, typeCode]);       // MPK mode
+      entries.push([`P${324 + idx * 4}`, key.account ?? "1"]);   // account
+      entries.push([`P${325 + idx * 4}`, key.value ?? ""]); // value
+      entries.push([`P${326 + idx * 4}`, key.description ?? ""]); // label
+    }
+  }
+
+  return entries;
+}
+
 export function renderProvisioningConfig(
   vendor: SupportedVendor,
   context: PhoneProvisioningContext,
@@ -105,6 +158,11 @@ export function renderProvisioningConfig(
   const mergedRules = new Map<string, string>();
 
   for (const [key, value] of buildBaseEntries(vendor, context)) {
+    mergedRules.set(key, value);
+  }
+
+  // Inject programmable key entries (can be overridden by explicit rules)
+  for (const [key, value] of buildProgrammableKeyEntries(vendor, context)) {
     mergedRules.set(key, value);
   }
 
