@@ -1,34 +1,32 @@
-export function PhoneExportCard() {
+type Props = {
+  inline?: boolean;
+};
+
+export function PhoneExportCard({ inline }: Props) {
+  if (inline) {
+    return (
+      <a href="/api/admin/phones/export" className="btn btn-ghost">
+        ↓ Exporter CSV
+      </a>
+    );
+  }
+
   return (
     <article
       style={{
-        borderRadius: 24,
-        border: "1px solid rgba(148, 163, 184, 0.18)",
-        background: "rgba(15, 23, 42, 0.78)",
-        padding: 24,
+        borderRadius: 12,
+        border: "1px solid var(--card-border)",
+        background: "var(--card-bg)",
+        padding: 20,
       }}
     >
-      <p style={{ color: "#93c5fd", marginBottom: 8 }}>CSV</p>
-      <h2 style={{ fontSize: 24, marginBottom: 8 }}>Exporter les téléphones</h2>
-      <p style={{ color: "#cbd5e1", lineHeight: 1.7, marginBottom: 14 }}>
-        Exporte la liste des téléphones configurés en CSV pour audit ou import externe.
+      <p style={{ color: "var(--accent)", fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>CSV</p>
+      <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 6 }}>Exporter les téléphones</h2>
+      <p style={{ color: "var(--muted)", lineHeight: 1.6, marginBottom: 14, fontSize: 13 }}>
+        Exporte la liste des téléphones configurés en CSV.
       </p>
-      <a
-        href="/api/admin/phones/export"
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "center",
-          minHeight: 44,
-          padding: "0 16px",
-          borderRadius: 12,
-          background: "#2563eb",
-          color: "white",
-          fontWeight: 700,
-          textDecoration: "none",
-        }}
-      >
-        Télécharger CSV
+      <a href="/api/admin/phones/export" className="btn btn-primary">
+        ↓ Télécharger CSV
       </a>
     </article>
   );
