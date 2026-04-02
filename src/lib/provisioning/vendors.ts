@@ -80,6 +80,23 @@ function buildBaseEntries(vendor: SupportedVendor, context: PhoneProvisioningCon
       ["backlight.inactive_level", "60"],
       ["features.blf_led_mode", "0"],
       ["phone_setting.mwi_indicator.enable", "1"],
+      // Codecs audio
+      ["account.1.codec.1.enable", "1"],
+      ["account.1.codec.1.payload_type", "PCMU"],  // G.711u
+      ["account.1.codec.2.enable", "1"],
+      ["account.1.codec.2.payload_type", "PCMA"],  // G.711a
+      ["account.1.codec.3.enable", "1"],
+      ["account.1.codec.3.payload_type", "G722"],  // HD audio
+      ["account.1.codec.4.enable", "1"],
+      ["account.1.codec.4.payload_type", "G729"],
+      ["account.1.codec.5.enable", "0"],
+      // SIP / Security
+      ["account.1.sip_server.1.port", "5060"],
+      ["account.1.srtp_encryption", "0"],          // 0=disabled, 1=optional, 2=mandatory
+      // PC port
+      ["network.pc_port.enable", "1"],
+      // Ring tone
+      ["phone_setting.ring_type", "Ring1.wav"],
       // Programmable keys globals
       ["linekey.key_mode", "0"],        // 0=LineMode
       ["linekey.show_label", "1"],
@@ -120,6 +137,17 @@ function buildBaseEntries(vendor: SupportedVendor, context: PhoneProvisioningCon
     ["P324", "100"], // LCD brightness active
     ["P325", "60"],  // LCD brightness idle
     ["P195", "1"],   // Enable MWI indicator
+    // Codecs audio (GXP2xxx)
+    ["P57", "0"],    // Codec 1: PCMU (G.711u)
+    ["P58", "8"],    // Codec 2: PCMA (G.711a)
+    ["P59", "9"],    // Codec 3: G.722
+    ["P60", "18"],   // Codec 4: G.729
+    // SIP port
+    ["P23", "5060"],
+    // SRTP
+    ["P183", "0"],   // 0=disabled
+    // PC port
+    ["P329", "1"],   // Enable PC port
     // Programmable keys globals
     ["P1362", "0"],  // Key mode: 0=LineMode, 1=AccountMode
     ["P1363", "1"],  // Show keys label
