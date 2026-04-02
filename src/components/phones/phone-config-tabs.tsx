@@ -82,7 +82,7 @@ export function PhoneConfigTabs({ phone, firmwares, provisioningUrl }: Props) {
       {activeTab === "firmware" && <TabFirmware phone={phone} firmwares={firmwares} />}
       {activeTab === "keys" && (
         <TabKeys
-          phone={{ id: phone.id, phoneModel: { vendor: phone.phoneModel.vendor, lineCapacity: phone.phoneModel.lineCapacity } }}
+          phone={{ id: phone.id, phoneModel: { vendor: phone.phoneModel.vendor, modelCode: phone.phoneModel.modelCode, lineCapacity: phone.phoneModel.lineCapacity } }}
           initialKeys={phone.programmableKeys.map(k => ({
             id: (k as { id?: string }).id,
             keyIndex: k.keyIndex,
