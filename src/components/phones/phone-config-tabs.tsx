@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { TabSip } from "./tabs/tab-sip";
 import { TabSettings } from "./tabs/tab-settings";
+import { TabMaintenance } from "./tabs/tab-maintenance";
 import { TabNetwork } from "./tabs/tab-network";
 import { TabSystem } from "./tabs/tab-system";
 import { TabFirmware } from "./tabs/tab-firmware";
@@ -52,7 +53,8 @@ type Props = {
 
 const TABS = [
   { id: "sip",         label: "Compte SIP" },
-  { id: "settings",   label: "Settings" },
+  { id: "settings",     label: "Settings" },
+  { id: "maintenance", label: "Maintenance" },
   { id: "network",    label: "Réseau" },
   { id: "system",     label: "Système" },
   { id: "firmware",   label: "Firmware" },
@@ -80,7 +82,8 @@ export function PhoneConfigTabs({ phone, firmwares, provisioningUrl }: Props) {
 
       {activeTab === "sip" && <TabSip phone={phone} />}
       {activeTab === "settings" && <TabSettings phone={{ id: phone.id, phoneModel: { vendor: phone.phoneModel.vendor } }} />}
-      {activeTab === "network" && <TabNetwork phone={phone} />}
+      {activeTab === "maintenance" && <TabMaintenance phone={{ id: phone.id, phoneModel: { vendor: phone.phoneModel.vendor } }} />}
+      {activeTab === "network" && <TabNetwork phone={{ id: phone.id, phoneModel: { vendor: phone.phoneModel.vendor } }} />}
       {activeTab === "system" && <TabSystem phone={phone} />}
       {activeTab === "firmware" && <TabFirmware phone={phone} firmwares={firmwares} />}
       {activeTab === "keys" && (
