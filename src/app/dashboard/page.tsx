@@ -5,6 +5,7 @@ import { CreateClientForm } from "@/components/admin/create-client-form";
 import { CreateFirmwareForm } from "@/components/admin/create-firmware-form";
 import { CreatePhoneForm } from "@/components/admin/create-phone-form";
 import { PhoneExportCard } from "@/components/admin/phone-export-card";
+import { PhoneImportForm } from "@/components/admin/phone-import-form";
 import { CreateProvisioningRuleForm } from "@/components/admin/create-provisioning-rule-form";
 import { CreateSiteForm } from "@/components/admin/create-site-form";
 import { EditPhoneForm } from "@/components/admin/edit-phone-form";
@@ -116,6 +117,10 @@ export default async function DashboardPage() {
 
         <section style={twoColSectionStyle}>
           <PhoneExportCard />
+          <article style={panelStyle}><div style={{ marginBottom: 18 }}><p style={{ color: "#93c5fd", marginBottom: 8 }}>CSV</p><h2 style={{ fontSize: 24, marginBottom: 8 }}>Importer des téléphones</h2><p style={{ color: "#cbd5e1", lineHeight: 1.7, marginBottom: 14 }}>Colonnes requises : <code>mac_address</code>, <code>client_slug</code>, <code>model_code</code>. Colonnes optionnelles : <code>site_slug</code>, <code>label</code>, <code>extension_number</code>, <code>sip_username</code>, <code>sip_password</code>, <code>sip_server</code>, <code>web_password</code>, <code>admin_password</code>.</p></div><PhoneImportForm /></article>
+        </section>
+
+        <section style={twoColSectionStyle}>
           <article style={panelStyle}><div style={{ marginBottom: 18 }}><p style={{ color: "#93c5fd", marginBottom: 8 }}>Provisioning</p><h2 style={{ fontSize: 24, marginBottom: 8 }}>Ajouter une règle hiérarchique</h2><p style={{ color: "#cbd5e1", lineHeight: 1.7 }}>Les règles sont résolues dans l’ordre : default → client → site → modèle → téléphone.</p></div><CreateProvisioningRuleForm clients={clientOptions.map(({ id, name }) => ({ id, name }))} sites={siteOptions.map(({ id, name }) => ({ id, name }))} phoneModels={phoneModelOptions.map(({ id, displayName, vendor }) => ({ id, displayName, vendor }))} phones={phoneOptions} /></article>
         </section>
 
