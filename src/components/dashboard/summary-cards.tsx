@@ -7,30 +7,22 @@ type SummaryCardsProps = {
   };
 };
 
-const items = [
-  { key: "clients", label: "Clients" },
-  { key: "sites", label: "Sites" },
-  { key: "phoneModels", label: "Modèles" },
-  { key: "phones", label: "Téléphones" },
-] as const;
+const ITEMS = [
+  { key: "clients" as const, label: "Clients", href: "/dashboard/clients" },
+  { key: "sites" as const, label: "Sites", href: "/dashboard/sites" },
+  { key: "phoneModels" as const, label: "Modèles", href: "#" },
+  { key: "phones" as const, label: "Téléphones", href: "/dashboard/phones" },
+];
 
 export function SummaryCards({ stats }: SummaryCardsProps) {
   return (
-    <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}>
-      {items.map((item) => (
-        <article
-          key={item.key}
-          style={{
-            border: "1px solid rgba(148, 163, 184, 0.18)",
-            background: "rgba(15, 23, 42, 0.72)",
-            borderRadius: 18,
-            padding: 20,
-          }}
-        >
-          <div style={{ color: "#93c5fd", fontSize: 13, marginBottom: 10 }}>{item.label}</div>
-          <div style={{ fontSize: 36, fontWeight: 700 }}>{stats[item.key]}</div>
-        </article>
+    <>
+      {ITEMS.map((item) => (
+        <a key={item.key} href={item.href} className="stat-card" style={{ textDecoration: "none", display: "block" }}>
+          <div className="stat-card-label">{item.label}</div>
+          <div className="stat-card-value">{stats[item.key]}</div>
+        </a>
       ))}
-    </div>
+    </>
   );
 }
