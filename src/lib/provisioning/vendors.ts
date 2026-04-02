@@ -74,6 +74,16 @@ function buildBaseEntries(vendor: SupportedVendor, context: PhoneProvisioningCon
       ["lang.gui", context.client.defaultLanguage === "fr" ? "French" : "English"],
       ["network.ntp.time_server", "pool.ntp.org"],
       ["features.call_log_enable", "1"],
+      // Display / LCD
+      ["backlight.active_time", "1"],
+      ["backlight.active_level", "100"],
+      ["backlight.inactive_level", "60"],
+      ["features.blf_led_mode", "0"],
+      ["phone_setting.mwi_indicator.enable", "1"],
+      // Programmable keys globals
+      ["linekey.key_mode", "0"],        // 0=LineMode
+      ["linekey.show_label", "1"],
+      ["features.blf_pickup_code", "**"],
       ...(firmwareUrl ? [["auto_provision.firmware.url", firmwareUrl]] : []),
     ] as Array<[string, string]>;
   }
@@ -103,9 +113,17 @@ function buildBaseEntries(vendor: SupportedVendor, context: PhoneProvisioningCon
     // Network - VLAN (disabled by default; overridden by phone-level provisioning rules)
     ["P3", "0"],     // VLAN Tag (802.1Q)
     ["P4", "0"],     // 802.1p Priority Value
-    // Display
+    // Display / LCD
     ["P234", yesNo(true)],
     ["P240", yesNo(true)],
+    ["P96", "1"],    // Active backlight timeout (minutes)
+    ["P324", "100"], // LCD brightness active
+    ["P325", "60"],  // LCD brightness idle
+    ["P195", "1"],   // Enable MWI indicator
+    // Programmable keys globals
+    ["P1362", "0"],  // Key mode: 0=LineMode, 1=AccountMode
+    ["P1363", "1"],  // Show keys label
+    ["P1464", "**"], // BLF call-pickup prefix
     // Firmware
     ...(firmwareUrl ? [["P232", firmwareUrl]] : []),
   ] as Array<[string, string]>;
