@@ -34,8 +34,8 @@ export function CreateSiteForm({ clients }: { clients: ClientOption[] }) {
           <input name="name" placeholder="ex: Bureau principal" required style={inputStyle} />
         </div>
         <div style={{ display: "grid", gap: 4 }}>
-          <label style={labelStyle}>Identifiant (unique, sans espaces)</label>
-          <input name="slug" placeholder="ex: bureau-principal" required style={inputStyle} />
+          <label style={labelStyle}>Identifiant unique</label>
+          <input name="slug" placeholder="ex: bureau-principal (minuscules, tirets)" required style={inputStyle} />
         </div>
       </div>
 
