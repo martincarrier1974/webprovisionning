@@ -48,6 +48,7 @@ function buildBaseEntries(vendor: SupportedVendor, context: PhoneProvisioningCon
 
   if (vendor === "yealink") {
     return [
+      // ── Account / SIP ─────────────────────────────────────────────────
       ["account.1.enable", context.sipUsername ? "1" : "0"],
       ["account.1.label", context.label || context.extensionNumber || context.client.name],
       ["account.1.display_name", context.label || context.client.name],
@@ -56,51 +57,125 @@ function buildBaseEntries(vendor: SupportedVendor, context: PhoneProvisioningCon
       ["account.1.password", context.sipPassword || ""],
       ["account.1.sip_server.1.address", context.sipServer || ""],
       ["account.1.sip_server.1.port", "5060"],
-      ["account.1.sip_server.1.transport_type", "0"],
+      ["account.1.sip_server.1.transport_type", "0"],  // 0=UDP
+      ["account.1.sip_server.1.expires", "60"],
+      ["account.1.sip_server.1.retry_counts", "3"],
+      ["account.1.reg_fail_retry_interval", "20"],
+      ["account.1.subscribe_mwi", "0"],
+      ["account.1.100rel_enable", "0"],
+      // Security
+      ["account.1.sip_trust_ctrl", "1"],           // Accept SIP from proxy only
+      ["account.1.blf_pickup_code", "**"],
+      // SRTP
+      ["account.1.srtp_encryption", "0"],          // 0=disabled
+      // Session Timer
+      ["account.1.session_timer.enable", "1"],
+      ["account.1.session_timer.expires", "180"],
+      ["account.1.session_timer.refresher", "0"],  // 0=UAC
+      // DTMF
+      ["account.1.dtmf.type", "1"],                // 1=RFC2833
+      ["account.1.dtmf.info_type", "0"],
+      ["account.1.dtmf.payload", "101"],
+      // Call features
+      ["account.1.auto_answer", "0"],
+      ["account.1.auto_answer.mute", "0"],
+      ["account.1.call_waiting.enable", "1"],
+      ["account.1.call_waiting.tone", "1"],
+      ["account.1.transfer.enable", "1"],
+      ["account.1.conference.enable", "1"],
+      ["account.1.anonymous_call", "0"],
+      ["account.1.anonymous_call_rejection", "0"],
+      ["account.1.ring_type", "Ring1.wav"],
+      // Caller ID
+      ["account.1.caller_id_source", "0"],         // 0=From header
+
+      // ── Passwords ─────────────────────────────────────────────────────
       ["phone_setting.admin_password", context.adminPassword || "admin"],
       ["security.user_password", context.webPassword || "user"],
+
+      // ── Auto Provision ────────────────────────────────────────────────
       ["auto_provision.server.url", `${baseUrl}/api/provisioning/yealink/${context.macAddress}`],
       ["auto_provision.repeat.enable", "1"],
-      ["auto_provision.repeat.minutes", "10080"],
+      ["auto_provision.repeat.minutes", "10080"],  // hebdomadaire
+      ["auto_provision.check.new_config", "1"],
+
+      // ── Time / Date / Language ────────────────────────────────────────
       ["local_time.time_zone_name", timezone],
       ["local_time.time_zone", "-5"],
       ["local_time.ntp_server1", "pool.ntp.org"],
-      ["static.network.dhcp_enable", "1"],
-      ["features.dnd.allow", "1"],
-      ["call_waiting.enable", "1"],
-      ["call_waiting.mode", "0"],
-      ["call_waiting.tone", "1"],
-      ["voice.tone.country", "Canada"],
+      ["local_time.ntp_server2", ""],
+      ["local_time.interval", "1440"],             // NTP sync interval (min)
+      ["local_time.time_format", "0"],             // 0=12h, 1=24h
+      ["local_time.date_format", "2"],             // 2=YYYY-MM-DD
       ["lang.gui", context.client.defaultLanguage === "fr" ? "French" : "English"],
+      ["lang.input.extended.char", "1"],
+
+      // ── Network ───────────────────────────────────────────────────────
+      ["static.network.dhcp_enable", "1"],
+      ["network.pc_port.enable", "1"],
+      ["network.vlan.internet_port_enable", "0"],  // VLAN disabled by default
+      ["network.vlan.internet_port_vid", "0"],
+      ["network.vlan.internet_port_priority", "0"],
       ["network.ntp.time_server", "pool.ntp.org"],
-      ["features.call_log_enable", "1"],
-      // Display / LCD
+      ["network.quality_of_service.rtptos", "46"], // DSCP EF for RTP
+
+      // ── Display / LCD ─────────────────────────────────────────────────
       ["backlight.active_time", "1"],
       ["backlight.active_level", "100"],
       ["backlight.inactive_level", "60"],
       ["features.blf_led_mode", "0"],
       ["phone_setting.mwi_indicator.enable", "1"],
-      // Codecs audio
+      ["phone_setting.show_date_time_as_screensaver", "0"],
+
+      // ── Call features (global) ────────────────────────────────────────
+      ["features.dnd.allow", "1"],
+      ["call_waiting.enable", "1"],
+      ["call_waiting.mode", "0"],
+      ["call_waiting.tone", "1"],
+      ["features.call_log_enable", "1"],
+      ["features.pickup.direct_pickup_code", "**"],
+      ["features.blf_pickup_code", "**"],
+      ["features.intercom.allow", "1"],
+      ["features.intercom.mute", "0"],
+      ["features.intercom.tone", "1"],
+      ["features.intercom.barge", "1"],
+      ["voice.tone.country", "Canada"],
+      ["phone_setting.ring_type", "Ring1.wav"],
+      ["phone_setting.lock_volume", "0"],
+
+      // ── Codecs ────────────────────────────────────────────────────────
       ["account.1.codec.1.enable", "1"],
       ["account.1.codec.1.payload_type", "PCMU"],  // G.711u
+      ["account.1.codec.1.priority", "1"],
       ["account.1.codec.2.enable", "1"],
       ["account.1.codec.2.payload_type", "PCMA"],  // G.711a
+      ["account.1.codec.2.priority", "2"],
       ["account.1.codec.3.enable", "1"],
-      ["account.1.codec.3.payload_type", "G722"],  // HD audio
+      ["account.1.codec.3.payload_type", "G722"],  // HD
+      ["account.1.codec.3.priority", "3"],
       ["account.1.codec.4.enable", "1"],
       ["account.1.codec.4.payload_type", "G729"],
+      ["account.1.codec.4.priority", "4"],
       ["account.1.codec.5.enable", "0"],
-      // SIP / Security
-      ["account.1.sip_server.1.port", "5060"],
-      ["account.1.srtp_encryption", "0"],          // 0=disabled, 1=optional, 2=mandatory
-      // PC port
-      ["network.pc_port.enable", "1"],
-      // Ring tone
-      ["phone_setting.ring_type", "Ring1.wav"],
-      // Programmable keys globals
-      ["linekey.key_mode", "0"],        // 0=LineMode
+      ["account.1.codec.5.payload_type", "iLBC"],
+      ["account.1.vad_enable", "0"],               // Silence suppression off
+      ["account.1.rtcp.enable", "1"],
+
+      // ── Programmable keys globals ─────────────────────────────────────
+      ["linekey.key_mode", "0"],                   // 0=LineMode
       ["linekey.show_label", "1"],
       ["features.blf_pickup_code", "**"],
+
+      // ── LDAP ──────────────────────────────────────────────────────────
+      ["ldap.enable", "0"],
+      ["ldap.server", ""],
+      ["ldap.port", "389"],
+      ["ldap.version", "3"],
+      ["ldap.max_hits", "50"],
+      ["ldap.search_timeout", "30"],
+      ["ldap.call_in_lookup", "0"],
+      ["ldap.call_out_lookup", "0"],
+
       ...(firmwareUrl ? [["auto_provision.firmware.url", firmwareUrl]] : []),
     ] as Array<[string, string]>;
   }
