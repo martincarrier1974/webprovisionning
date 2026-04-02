@@ -16,6 +16,7 @@ const NAV_ITEMS = [
   { href: "/dashboard/phones", label: "Téléphones", icon: "☎" },
   { href: "/dashboard/firmwares", label: "Firmwares", icon: "⊙" },
   { href: "/dashboard/rules", label: "Règles provision.", icon: "⊛" },
+  { href: "/dashboard/templates", label: "Templates", icon: "⧉" },
   { href: "/dashboard/logs", label: "Logs", icon: "≡" },
   { href: "/dashboard/users", label: "Utilisateurs", icon: "⊕" },
 ];
