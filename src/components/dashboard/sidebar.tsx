@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 
 import { logoutAction } from "@/app/actions/auth";
 
@@ -20,6 +21,45 @@ const NAV_ITEMS = [
   { href: "/dashboard/logs", label: "Logs", icon: "≡" },
   { href: "/dashboard/users", label: "Utilisateurs", icon: "⊕" },
 ];
+
+function ThemeToggle() {
+  const [light, setLight] = useState(false);
+
+  useEffect(() => {
+    const stored = localStorage.getItem("theme");
+    if (stored === "light") {
+      document.documentElement.classList.add("light");
+      setLight(true);
+    }
+  }, []);
+
+  function toggle() {
+    const next = !light;
+    setLight(next);
+    if (next) {
+      document.documentElement.classList.add("light");
+      localStorage.setItem("theme", "light");
+    } else {
+      document.documentElement.classList.remove("light");
+      localStorage.setItem("theme", "dark");
+    }
+  }
+
+  return (
+    <button
+      onClick={toggle}
+      title={light ? "Passer en mode sombre" : "Passer en mode clair"}
+      style={{
+        width: "100%", textAlign: "left", display: "flex", alignItems: "center",
+        gap: 10, padding: "9px 12px", borderRadius: 8, color: "var(--muted)",
+        fontSize: 14, fontWeight: 500, background: "none", border: "none", cursor: "pointer",
+      }}
+    >
+      <span style={{ fontSize: 16 }}>{light ? "☾" : "☀"}</span>
+      {light ? "Mode sombre" : "Mode clair"}
+    </button>
+  );
+}
 
 export function DashboardSidebar({ user }: Props) {
   const pathname = usePathname();
@@ -47,6 +87,7 @@ export function DashboardSidebar({ user }: Props) {
       </div>
 
       <div className="dashboard-sidebar-footer">
+        <ThemeToggle />
         <form action={logoutAction}>
           <button type="submit" className="dashboard-sidebar-nav" style={{ width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderRadius: 8, color: "var(--muted)", fontSize: 14, fontWeight: 500, background: "none", border: "none", cursor: "pointer" }}>
             <span style={{ fontSize: 16 }}>⊗</span>
