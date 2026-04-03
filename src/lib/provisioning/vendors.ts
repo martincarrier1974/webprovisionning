@@ -587,18 +587,19 @@ export function renderGrandstreamXml(
     mergedRules.set(entry.key, entry.value);
   }
 
+  const escape = (v: string) => v.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
   const items = Array.from(mergedRules.entries())
     .filter(([, v]) => v !== "")
-    .map(([k, v]) => `  <P id="${k}">${v.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</P>`)
+    .map(([k, v]) => `  <${k}>${escape(v)}</${k}>`)
     .join("\n");
 
   return [
-    `<?xml version="1.0" encoding="UTF-8"?>`,
-    `<!-- Auto-generated for ${normalizedMac} | ${context.phoneModel.displayName} -->`,
+    `<?xml version="1.0" encoding="UTF-8" ?>`,
     `<gs_provision version="1">`,
-    `  <config version="1">`,
+    `<config version="1">`,
     items,
-    `  </config>`,
+    `</config>`,
     `</gs_provision>`,
   ].join("\n");
 }
