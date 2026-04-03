@@ -8,6 +8,7 @@ import {
   prismaVendorToSupportedVendor,
   renderProvisioningConfig,
 } from "@/lib/provisioning/vendors";
+import { sendWebhook } from "@/lib/webhooks/notify";
 
 export async function GET(
   request: Request,
@@ -60,6 +61,8 @@ export async function GET(
       message: `Resolved ${resolved.resolvedEntries.length} rules`,
     },
   });
+
+  void sendWebhook("phone.provisioned", { mac: normalizedMac, vendor: "YEALINK", phoneId: phone.id });
 
   return new NextResponse(content, {
     status: 200,

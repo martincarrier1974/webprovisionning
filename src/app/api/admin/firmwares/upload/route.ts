@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { requireAdmin } from "@/lib/auth/dal";
 import { db } from "@/lib/db";
-import { isObjectStorageConfigured } from "@/lib/storage/object-storage";
+import { isObjectStorageConfigured, uploadToS3 } from "@/lib/storage/object-storage";
 
 const LOCAL_FIRMWARE_DIR = join(process.cwd(), "public", "firmware");
 
@@ -41,22 +41,25 @@ export async function POST(request: NextRequest) {
   let finalStorageKey = storageKey;
 
   if (isObjectStorageConfigured()) {
-    // TODO: upload to S3/object storage
-    // For now fall through to local
-  }
-
-  // Local storage in public/firmware
-  try {
-    const dir = join(LOCAL_FIRMWARE_DIR, phoneModel.vendor.toLowerCase(), phoneModel.modelCode, safeVersion);
-    mkdirSync(dir, { recursive: true });
-    const dest = join(dir, originalName);
-    const readable = Readable.from(buffer);
-    const writable = createWriteStream(dest);
-    await pipeline(readable, writable);
+    const s3Result = await uploadToS3(storageKey, buffer, "application/octet-stream");
+    if (!s3Result.ok) {
+      return NextResponse.json({ ok: false, error: s3Result.error }, { status: 500 });
+    }
     finalStorageKey = storageKey;
-  } catch (e: unknown) {
-    const err = e as { message?: string };
-    return NextResponse.json({ ok: false, error: `Erreur écriture: ${err.message}` }, { status: 500 });
+  } else {
+    // Local storage in public/firmware (fallback — éphémère sur Railway)
+    try {
+      const dir = join(LOCAL_FIRMWARE_DIR, phoneModel.vendor.toLowerCase(), phoneModel.modelCode, safeVersion);
+      mkdirSync(dir, { recursive: true });
+      const dest = join(dir, originalName);
+      const readable = Readable.from(buffer);
+      const writable = createWriteStream(dest);
+      await pipeline(readable, writable);
+      finalStorageKey = storageKey;
+    } catch (e: unknown) {
+      const err = e as { message?: string };
+      return NextResponse.json({ ok: false, error: `Erreur écriture locale: ${err.message}` }, { status: 500 });
+    }
   }
 
   if (setDefault) {

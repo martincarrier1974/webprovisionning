@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getProvisioningContextByMac, getResolvedProvisioningRules } from "@/lib/provisioning/rules";
 import { isValidMac, normalizeMac, renderProvisioningConfig } from "@/lib/provisioning/vendors";
+import { sendWebhook } from "@/lib/webhooks/notify";
 
 export async function GET(
   request: Request,
@@ -47,6 +48,8 @@ export async function GET(
       message: `Resolved ${resolved.resolvedEntries.length} rules`,
     },
   });
+
+  void sendWebhook("phone.provisioned", { mac: normalizedMac, vendor: "SNOM", phoneId: phone.id });
 
   return new NextResponse(content, {
     status: 200,

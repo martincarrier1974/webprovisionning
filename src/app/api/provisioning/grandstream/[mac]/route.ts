@@ -8,6 +8,7 @@ import {
   prismaVendorToSupportedVendor,
   renderProvisioningConfig,
 } from "@/lib/provisioning/vendors";
+import { sendWebhook } from "@/lib/webhooks/notify";
 
 export async function GET(
   request: Request,
@@ -59,6 +60,12 @@ export async function GET(
       statusCode: 200,
       message: `Resolved ${resolved.resolvedEntries.length} rules`,
     },
+  });
+
+  void sendWebhook("phone.provisioned", {
+    mac: normalizedMac, vendor: "GRANDSTREAM",
+    phoneId: phone.id, label: phone.label,
+    rules: resolved.resolvedEntries.length,
   });
 
   return new NextResponse(content, {

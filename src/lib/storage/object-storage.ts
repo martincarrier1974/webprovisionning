@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { createHmac } from "node:crypto";
 
 type ObjectStorageConfig = {
   provider: string;
@@ -44,30 +45,95 @@ export function buildStorageKey(originalName: string) {
 
 export function buildPublicObjectUrl(storageKey: string) {
   const config = getConfig();
-
-  if (!config) {
-    return null;
-  }
-
+  if (!config) return null;
   return `${config.endpoint}/${config.bucket}/${storageKey}`;
 }
 
 export function getObjectStorageSummary() {
   const config = getConfig();
+  if (!config) return { configured: false, bucket: null, endpoint: null, provider: null };
+  return { configured: true, bucket: config.bucket, endpoint: config.endpoint, provider: config.provider };
+}
 
-  if (!config) {
-    return {
-      configured: false,
-      bucket: null,
-      endpoint: null,
-      provider: null,
-    };
-  }
+// ── AWS Signature V4 S3 upload (no SDK dependency) ────────────────────────
 
-  return {
-    configured: true,
-    bucket: config.bucket,
-    endpoint: config.endpoint,
-    provider: config.provider,
+function hmacSha256(key: Buffer | string, data: string): Buffer {
+  return createHmac("sha256", key).update(data, "utf8").digest();
+}
+
+function hexEncode(buf: Buffer): string {
+  return buf.toString("hex");
+}
+
+function getSigningKey(secretKey: string, date: string, region: string, service: string): Buffer {
+  const kDate = hmacSha256("AWS4" + secretKey, date);
+  const kRegion = hmacSha256(kDate, region);
+  const kService = hmacSha256(kRegion, service);
+  return hmacSha256(kService, "aws4_request");
+}
+
+export async function uploadToS3(storageKey: string, buffer: Buffer, contentType = "application/octet-stream"): Promise<{ ok: boolean; url?: string; error?: string }> {
+  const config = getConfig();
+  if (!config) return { ok: false, error: "Stockage objet non configuré." };
+
+  const now = new Date();
+  const dateStamp = now.toISOString().slice(0, 10).replace(/-/g, "");
+  const amzDate = now.toISOString().replace(/[:-]/g, "").slice(0, 15) + "Z";
+
+  const host = new URL(config.endpoint).host;
+  const url = `${config.endpoint}/${config.bucket}/${storageKey}`;
+  const sha256 = crypto.createHash("sha256").update(buffer).digest("hex");
+
+  const headers: Record<string, string> = {
+    "host": host,
+    "x-amz-date": amzDate,
+    "x-amz-content-sha256": sha256,
+    "content-type": contentType,
+    "content-length": String(buffer.length),
   };
+
+  const sortedHeaderKeys = Object.keys(headers).sort();
+  const canonicalHeaders = sortedHeaderKeys.map(k => `${k}:${headers[k]}\n`).join("");
+  const signedHeaders = sortedHeaderKeys.join(";");
+
+  const canonicalRequest = [
+    "PUT",
+    `/${config.bucket}/${storageKey}`,
+    "",
+    canonicalHeaders,
+    signedHeaders,
+    sha256,
+  ].join("\n");
+
+  const credentialScope = `${dateStamp}/${config.region}/s3/aws4_request`;
+  const stringToSign = [
+    "AWS4-HMAC-SHA256",
+    amzDate,
+    credentialScope,
+    hexEncode(crypto.createHash("sha256").update(canonicalRequest).digest()),
+  ].join("\n");
+
+  const signingKey = getSigningKey(config.secretAccessKey, dateStamp, config.region, "s3");
+  const signature = hexEncode(hmacSha256(signingKey, stringToSign));
+
+  const authHeader = `AWS4-HMAC-SHA256 Credential=${config.accessKeyId}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
+
+  try {
+    const res = await fetch(url, {
+      method: "PUT",
+      headers: {
+        ...headers,
+        "Authorization": authHeader,
+      },
+      body: buffer as BodyInit,
+    });
+
+    if (res.ok || res.status === 200) {
+      return { ok: true, url: buildPublicObjectUrl(storageKey) ?? url };
+    }
+    const body = await res.text();
+    return { ok: false, error: `S3 ${res.status}: ${body.slice(0, 200)}` };
+  } catch (e: unknown) {
+    return { ok: false, error: (e as { message?: string }).message ?? "Erreur upload S3." };
+  }
 }
