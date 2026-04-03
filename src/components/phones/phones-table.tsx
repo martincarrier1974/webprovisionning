@@ -117,44 +117,47 @@ export function PhonesTable({ phones }: { phones: Phone[] }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
 
-      {/* ── Barre d'actions en masse ────────────────────────────── */}
-      {selected.size > 0 && (
-        <div style={{
-          display: "flex", alignItems: "center", gap: 12, padding: "10px 16px",
-          background: "rgba(255,107,0,0.08)", border: "1px solid rgba(255,107,0,0.3)",
-          borderRadius: 8, flexWrap: "wrap",
-        }}>
-          <span style={{ fontSize: 13, fontWeight: 600, color: "var(--accent)" }}>
-            {selected.size} téléphone{selected.size > 1 ? "s" : ""} sélectionné{selected.size > 1 ? "s" : ""}
-          </span>
-          <div style={{ display: "flex", gap: 8, marginLeft: "auto", flexWrap: "wrap" }}>
-            <button
-              className="btn btn-primary btn-sm"
-              onClick={() => runBulk("config")}
-              disabled={running !== null}
-            >
-              {running === "config" ? `⟳ Config en cours… (${results.length}/${selected.size})` : "⟳ Pousser config"}
-            </button>
-            <button
-              className="btn btn-ghost btn-sm"
-              onClick={() => runBulk("firmware")}
-              disabled={running !== null}
-              style={{ borderColor: "rgba(255,107,0,0.4)", color: "var(--accent)" }}
-            >
-              {running === "firmware" ? `↑ Firmware en cours… (${results.length}/${selected.size})` : "↑ Pousser firmware"}
-            </button>
-            <button
-              className="btn btn-ghost btn-sm"
-              onClick={deleteBulk}
-              disabled={running !== null}
-              style={{ borderColor: "rgba(248,113,113,0.4)", color: "#f87171" }}
-            >
-              {running === "delete" ? `✕ Suppression… (${results.length}/${selected.size})` : "✕ Supprimer"}
-            </button>
+      {/* ── Barre d'actions ────────────────────────────────────── */}
+      <div style={{
+        display: "flex", alignItems: "center", gap: 12, padding: "10px 16px",
+        background: selected.size > 0 ? "rgba(255,107,0,0.08)" : "#111",
+        border: `1px solid ${selected.size > 0 ? "rgba(255,107,0,0.3)" : "var(--card-border)"}`,
+        borderRadius: 8, flexWrap: "wrap", transition: "background 0.2s, border-color 0.2s",
+      }}>
+        <span style={{ fontSize: 13, fontWeight: 600, color: selected.size > 0 ? "var(--accent)" : "var(--muted)" }}>
+          {selected.size > 0
+            ? `${selected.size} téléphone${selected.size > 1 ? "s" : ""} sélectionné${selected.size > 1 ? "s" : ""}`
+            : "Aucune sélection"}
+        </span>
+        <div style={{ display: "flex", gap: 8, marginLeft: "auto", flexWrap: "wrap" }}>
+          <button
+            className="btn btn-primary btn-sm"
+            onClick={() => runBulk("config")}
+            disabled={running !== null || selected.size === 0}
+          >
+            {running === "config" ? `⟳ Config en cours… (${results.length}/${selected.size})` : "⟳ Pousser config"}
+          </button>
+          <button
+            className="btn btn-ghost btn-sm"
+            onClick={() => runBulk("firmware")}
+            disabled={running !== null || selected.size === 0}
+            style={{ borderColor: "rgba(255,107,0,0.4)", color: "var(--accent)" }}
+          >
+            {running === "firmware" ? `↑ Firmware en cours… (${results.length}/${selected.size})` : "↑ Pousser firmware"}
+          </button>
+          <button
+            className="btn btn-ghost btn-sm"
+            onClick={deleteBulk}
+            disabled={running !== null || selected.size === 0}
+            style={{ borderColor: "rgba(248,113,113,0.4)", color: "#f87171" }}
+          >
+            {running === "delete" ? `✕ Suppression… (${results.length}/${selected.size})` : "✕ Supprimer"}
+          </button>
+          {selected.size > 0 && (
             <button className="btn btn-ghost btn-sm" onClick={() => setSelected(new Set())}>Désélectionner</button>
-          </div>
+          )}
         </div>
-      )}
+      </div>
 
       {/* ── Résultats bulk ─────────────────────────────────────── */}
       {showResults && results.length > 0 && (
