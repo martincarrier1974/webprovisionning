@@ -2,6 +2,7 @@ import { Suspense } from "react";
 
 import { CreateSiteForm } from "@/components/admin/create-site-form";
 import { SiteManagementActions } from "@/components/admin/site-management-actions";
+import { SiteTemplateAssign } from "@/components/sites/site-template-assign";
 import { ClientSelector } from "@/components/dashboard/client-selector";
 import { db } from "@/lib/db";
 
@@ -12,7 +13,7 @@ type Props = {
 export default async function SitesPage({ searchParams }: Props) {
   const { clientId } = await searchParams;
 
-  const [clients, sites] = await Promise.all([
+  const [clients, sites, templates] = await Promise.all([
     db.client.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, slug: true } }),
     db.site.findMany({
       where: clientId ? { clientId } : undefined,
@@ -20,8 +21,10 @@ export default async function SitesPage({ searchParams }: Props) {
       include: {
         client: { select: { id: true, name: true, slug: true } },
         _count: { select: { phones: true } },
+        templates: { include: { template: { select: { id: true, name: true } } } },
       },
     }),
+    db.phoneTemplate.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, vendor: true } }),
   ]);
 
   const selectedClient = clientId ? clients.find((c) => c.id === clientId) : null;
@@ -66,6 +69,11 @@ export default async function SitesPage({ searchParams }: Props) {
                       {` · ${site._count.phones} téléphone(s)`}
                     </div>
                   </div>
+                  <SiteTemplateAssign
+                    siteId={site.id}
+                    templates={templates}
+                    assigned={site.templates.map(t => t.template)}
+                  />
                   <SiteManagementActions
                     site={{
                       id: site.id,

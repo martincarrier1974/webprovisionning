@@ -1,4 +1,5 @@
 import { CreateFirmwareForm } from "@/components/admin/create-firmware-form";
+import { FirmwareUploadForm } from "@/components/admin/firmware-upload-form";
 import { FirmwareManagementActions } from "@/components/admin/firmware-management-actions";
 import { db } from "@/lib/db";
 import { translateStatus } from "@/lib/i18n/status";
@@ -29,8 +30,11 @@ export default async function FirmwaresPage() {
       <div className="dashboard-content">
         <div className="grid-2" style={{ gap: 24 }}>
           <div className="card">
-            <div className="card-title">Nouveau</div>
-            <div className="card-heading">Ajouter un firmware</div>
+            <div className="card-title">Upload</div>
+            <div className="card-heading" style={{ marginBottom: 16 }}>Uploader un firmware</div>
+            <FirmwareUploadForm phoneModels={phoneModelOptions} />
+            <div style={{ borderTop: "1px solid var(--card-border)", margin: "20px 0" }} />
+            <div className="card-heading" style={{ marginBottom: 16 }}>Ou enregistrer manuellement (URL externe)</div>
             <p className="card-desc">Déclare une version de firmware pour un modèle de téléphone.</p>
             <CreateFirmwareForm phoneModels={phoneModelOptions} />
           </div>
