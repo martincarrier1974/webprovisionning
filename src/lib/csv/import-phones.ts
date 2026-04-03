@@ -1,6 +1,7 @@
 import { parse } from "csv-parse/sync";
 
 import { db } from "@/lib/db";
+import { macAsColonSeparated, phoneMacMatchWhere } from "@/lib/mac-address";
 
 type ImportRow = {
   mac_address: string;
@@ -47,27 +48,27 @@ export async function importPhonesCsv(csvText: string): Promise<ImportResult> {
       continue;
     }
 
-    const formattedMac = mac.match(/.{2}/g)!.join(":");
+    const macDisplay = macAsColonSeparated(mac);
 
     if (!row.client_slug) {
-      result.errors.push({ row: rowNum, mac: formattedMac, reason: "client_slug requis" });
+      result.errors.push({ row: rowNum, mac: macDisplay, reason: "client_slug requis" });
       continue;
     }
 
     if (!row.model_code) {
-      result.errors.push({ row: rowNum, mac: formattedMac, reason: "model_code requis" });
+      result.errors.push({ row: rowNum, mac: macDisplay, reason: "model_code requis" });
       continue;
     }
 
     const client = await db.client.findUnique({ where: { slug: row.client_slug } });
     if (!client) {
-      result.errors.push({ row: rowNum, mac: formattedMac, reason: `Client "${row.client_slug}" introuvable` });
+      result.errors.push({ row: rowNum, mac: macDisplay, reason: `Client "${row.client_slug}" introuvable` });
       continue;
     }
 
     const phoneModel = await db.phoneModel.findFirst({ where: { modelCode: row.model_code, isActive: true } });
     if (!phoneModel) {
-      result.errors.push({ row: rowNum, mac: formattedMac, reason: `Modèle "${row.model_code}" introuvable` });
+      result.errors.push({ row: rowNum, mac: macDisplay, reason: `Modèle "${row.model_code}" introuvable` });
       continue;
     }
 
@@ -77,13 +78,15 @@ export async function importPhonesCsv(csvText: string): Promise<ImportResult> {
         where: { slug: row.site_slug, clientId: client.id },
       });
       if (!site) {
-        result.errors.push({ row: rowNum, mac: formattedMac, reason: `Site "${row.site_slug}" introuvable pour ce client` });
+        result.errors.push({ row: rowNum, mac: macDisplay, reason: `Site "${row.site_slug}" introuvable pour ce client` });
         continue;
       }
       siteId = site.id;
     }
 
-    const existing = await db.phone.findUnique({ where: { macAddress: formattedMac } });
+    const existing = await db.phone.findFirst({
+      where: phoneMacMatchWhere(mac),
+    });
     if (existing) {
       result.skipped++;
       continue;
@@ -91,7 +94,7 @@ export async function importPhonesCsv(csvText: string): Promise<ImportResult> {
 
     await db.phone.create({
       data: {
-        macAddress: formattedMac,
+        macAddress: mac,
         clientId: client.id,
         siteId,
         phoneModelId: phoneModel.id,

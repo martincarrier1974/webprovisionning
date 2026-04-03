@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { requireAdmin } from "@/lib/auth/dal";
 import { db } from "@/lib/db";
+import { phoneMacMatchWhere } from "@/lib/mac-address";
 import { type ActionState } from "@/lib/auth/definitions";
 import {
   createClientSchema,
@@ -268,8 +269,8 @@ export async function createPhoneAction(
     }
   }
 
-  const existingPhone = await db.phone.findUnique({
-    where: { macAddress: parsed.data.macAddress },
+  const existingPhone = await db.phone.findFirst({
+    where: phoneMacMatchWhere(parsed.data.macAddress),
   });
 
   if (existingPhone) {
@@ -342,10 +343,7 @@ export async function updatePhoneAction(formData: FormData) {
   }
 
   const existingPhone = await db.phone.findFirst({
-    where: {
-      macAddress: parsed.data.macAddress,
-      NOT: { id: parsed.data.id },
-    },
+    where: phoneMacMatchWhere(parsed.data.macAddress, { excludePhoneId: parsed.data.id }),
   });
 
   if (existingPhone) {
