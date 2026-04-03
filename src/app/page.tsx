@@ -34,12 +34,13 @@ const nextSteps = [
 ];
 
 export default async function Home() {
-  const stats = await getDashboardSummary().catch(() => ({
-    clients: 0,
-    sites: 0,
+  const rawStats = await getDashboardSummary().catch(() => null);
+  const stats = {
+    clients: rawStats?.clients ?? 0,
+    sites: rawStats?.sites ?? 0,
     phoneModels: 0,
-    phones: 0,
-  }));
+    phones: rawStats?.phones.total ?? 0,
+  };
 
   return (
     <main className={styles.page}>
