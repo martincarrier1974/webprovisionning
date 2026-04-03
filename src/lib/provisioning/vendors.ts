@@ -25,8 +25,8 @@ export function prismaVendorToSupportedVendor(vendor: Vendor): SupportedVendor {
 }
 
 export function getProvisioningBaseUrl() {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
-  return appUrl && appUrl.length > 0 ? appUrl.replace(/\/$/, "") : "http://localhost:3000";
+  const appUrl = (process.env.APP_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "").trim();
+  return appUrl.length > 0 ? appUrl.replace(/\/$/, "") : "http://localhost:3000";
 }
 
 function formatValue(value: string) {
