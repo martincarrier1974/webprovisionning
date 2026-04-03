@@ -192,7 +192,7 @@ function buildBaseEntries(vendor: SupportedVendor, context: PhoneProvisioningCon
     ["P192", context.sipServer || ""],            // SIP Server
     ["P2", context.adminPassword || "admin"],     // Admin password
     // Provisioning
-    ["P237", `${baseUrl}/api/provisioning/grandstream/${context.macAddress}`], // Config server
+    ["P237", `${baseUrl}/api/provisioning/grandstream/`], // Config server base path (phone appends cfgMAC.xml)
     ["P145", "3"],                                // Firmware upgrade: always check
     // ── NTP / Time / Language ─────────────────────────────────────────────
     ["P212", "pool.ntp.org"],                     // NTP server
