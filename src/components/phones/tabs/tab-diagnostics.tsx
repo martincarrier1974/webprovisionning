@@ -51,6 +51,9 @@ export function TabDiagnostics({ phone: initialPhone }: { phone: Phone }) {
   const [selectedRules, setSelectedRules] = useState<Set<string>>(new Set());
   const [applying, setApplying] = useState(false);
   const [applyMsg, setApplyMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [savingTemplate, setSavingTemplate] = useState(false);
+  const [templateName, setTemplateName] = useState("");
+  const [showTemplateSave, setShowTemplateSave] = useState(false);
   const [ipEdit, setIpEdit] = useState(initialPhone.ipAddress || "");
   const [sipPortEdit, setSipPortEdit] = useState(String(initialPhone.sipPort || ""));
   const [savingIp, setSavingIp] = useState(false);
@@ -172,6 +175,39 @@ export function TabDiagnostics({ phone: initialPhone }: { phone: Phone }) {
   const filteredImport = (importedRules ?? []).filter(r =>
     !importFilter || r.key.toLowerCase().includes(importFilter.toLowerCase()) || r.value.toLowerCase().includes(importFilter.toLowerCase())
   );
+
+  async function saveAsTemplate() {
+    if (!importedRules || !templateName.trim()) return;
+    setSavingTemplate(true);
+    setApplyMsg(null);
+    try {
+      const rules = importedRules
+        .filter(r => selectedRules.has(r.key))
+        .map(r => ({ key: r.key, value: r.value }));
+      const res = await fetch("/api/admin/templates", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          name: templateName.trim(),
+          vendor: phone.phoneModel.vendor,
+          description: `Importé depuis ${phone.macAddress}`,
+          rules,
+        }),
+      });
+      const json = await res.json();
+      if (json.ok) {
+        setApplyMsg({ ok: true, text: `✓ Template "${templateName}" créé avec ${rules.length} règles.` });
+        setShowTemplateSave(false);
+        setTemplateName("");
+      } else {
+        setApplyMsg({ ok: false, text: json.error ?? "Erreur." });
+      }
+    } catch {
+      setApplyMsg({ ok: false, text: "Erreur réseau." });
+    } finally {
+      setSavingTemplate(false);
+    }
+  }
 
   return (
     <div style={{ display: "grid", gap: 16 }}>
@@ -369,8 +405,35 @@ export function TabDiagnostics({ phone: initialPhone }: { phone: Phone }) {
               ))}
             </div>
 
+            {/* Save as template inline */}
+            {showTemplateSave && (
+              <div style={{ display: "flex", gap: 8, alignItems: "center", padding: "10px 12px", background: "rgba(255,107,0,0.05)", border: "1px solid rgba(255,107,0,0.2)", borderRadius: 8 }}>
+                <input
+                  className="form-input"
+                  value={templateName}
+                  onChange={e => setTemplateName(e.target.value)}
+                  placeholder="Nom du template…"
+                  style={{ flex: 1, padding: "5px 10px", fontSize: 13 }}
+                  autoFocus
+                  onKeyDown={e => e.key === "Enter" && saveAsTemplate()}
+                />
+                <button className="btn btn-primary btn-sm" onClick={saveAsTemplate} disabled={savingTemplate || !templateName.trim()}>
+                  {savingTemplate ? "..." : "Créer"}
+                </button>
+                <button className="btn btn-ghost btn-sm" onClick={() => setShowTemplateSave(false)}>✕</button>
+              </div>
+            )}
+
             <div style={{ display: "flex", gap: 10, alignItems: "center", justifyContent: "flex-end" }}>
               {applyMsg && <span style={{ fontSize: 13, color: applyMsg.ok ? "#4ade80" : "#f87171" }}>{applyMsg.text}</span>}
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={() => { setShowTemplateSave(s => !s); setApplyMsg(null); }}
+                disabled={selectedRules.size === 0}
+                style={{ borderColor: "rgba(255,107,0,0.3)", color: "var(--accent)" }}
+              >
+                ⧉ Sauvegarder comme template
+              </button>
               <button
                 className="btn btn-primary"
                 onClick={applyImport}
