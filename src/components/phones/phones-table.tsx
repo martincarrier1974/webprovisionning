@@ -25,7 +25,7 @@ type BulkResult = { id: string; ok: boolean; error?: string };
 
 export function PhonesTable({ phones }: { phones: Phone[] }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [running, setRunning] = useState<"config" | "firmware" | null>(null);
+  const [running, setRunning] = useState<"config" | "firmware" | "delete" | null>(null);
   const [results, setResults] = useState<BulkResult[]>([]);
   const [showResults, setShowResults] = useState(false);
 
@@ -43,6 +43,35 @@ export function PhonesTable({ phones }: { phones: Phone[] }) {
       s.has(id) ? s.delete(id) : s.add(id);
       return s;
     });
+  }
+
+  async function deleteBulk() {
+    if (selected.size === 0) return;
+    if (!confirm(`Supprimer ${selected.size} téléphone${selected.size > 1 ? "s" : ""} ? Cette action est irréversible.`)) return;
+    setRunning("delete");
+    setResults([]);
+    setShowResults(true);
+
+    const ids = [...selected];
+    const res: BulkResult[] = [];
+
+    for (const id of ids) {
+      try {
+        const r = await fetch(`/api/admin/phones/${id}`, { method: "DELETE" });
+        const json = await r.json();
+        res.push({ id, ok: json.ok, error: json.error });
+      } catch {
+        res.push({ id, ok: false, error: "Erreur réseau" });
+      }
+      setResults([...res]);
+    }
+
+    // Remove deleted phones from the list
+    const deleted = new Set(res.filter(r => r.ok).map(r => r.id));
+    setSelected(new Set());
+    // Refresh page to reflect deletions
+    if (deleted.size > 0) window.location.reload();
+    setRunning(null);
   }
 
   async function runBulk(action: "config" | "firmware") {
@@ -113,6 +142,14 @@ export function PhonesTable({ phones }: { phones: Phone[] }) {
               style={{ borderColor: "rgba(255,107,0,0.4)", color: "var(--accent)" }}
             >
               {running === "firmware" ? `↑ Firmware en cours… (${results.length}/${selected.size})` : "↑ Pousser firmware"}
+            </button>
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={deleteBulk}
+              disabled={running !== null}
+              style={{ borderColor: "rgba(248,113,113,0.4)", color: "#f87171" }}
+            >
+              {running === "delete" ? `✕ Suppression… (${results.length}/${selected.size})` : "✕ Supprimer"}
             </button>
             <button className="btn btn-ghost btn-sm" onClick={() => setSelected(new Set())}>Désélectionner</button>
           </div>
