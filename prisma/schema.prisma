@@ -143,9 +143,11 @@ model Phone {
   macAddress          String      @unique
   label               String?
   extensionNumber     String?
+  ipAddress           String?
   sipUsername         String?
   sipPassword         String?
   sipServer           String?
+  sipPort             Int?
   provisioningEnabled Boolean     @default(true)
   webPassword         String?
   adminPassword       String?

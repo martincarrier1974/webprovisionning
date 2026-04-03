@@ -24,6 +24,8 @@ export async function POST(
       sipServer: body.sipServer ?? phone.sipServer,
       webPassword: body.webPassword ?? phone.webPassword,
       adminPassword: body.adminPassword ?? phone.adminPassword,
+      ipAddress: body.ipAddress !== undefined ? (body.ipAddress || null) : phone.ipAddress,
+      sipPort: body.sipPort !== undefined ? (body.sipPort ? Number(body.sipPort) : null) : phone.sipPort,
       status: body.status ?? phone.status,
       provisioningEnabled: body.provisioningEnabled ?? phone.provisioningEnabled,
       firmwareTargetId: body.firmwareTargetId !== undefined ? (body.firmwareTargetId || null) : phone.firmwareTargetId,

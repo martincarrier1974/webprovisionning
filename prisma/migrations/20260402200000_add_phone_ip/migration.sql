@@ -1,0 +1,2 @@
+ALTER TABLE "Phone" ADD COLUMN "ipAddress" TEXT;
+ALTER TABLE "Phone" ADD COLUMN "sipPort" INTEGER;

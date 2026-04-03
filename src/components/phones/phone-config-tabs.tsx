@@ -41,6 +41,8 @@ type Phone = {
   firmwareTarget: { id: string; version: string; storageKey: string | null } | null;
   client: { id: string; name: string; timezone: string | null; defaultLanguage: string };
   site: { id: string; name: string; timezone: string | null } | null;
+  ipAddress: string | null;
+  sipPort: number | null;
   phoneModel: { id: string; vendor: string; modelCode: string; displayName: string; lineCapacity?: number | null };
   provisionLogs: { id: string; createdAt: Date; success: boolean; statusCode: number | null; message: string | null; requestPath: string }[];
   programmableKeys: ProgrammableKey[];
