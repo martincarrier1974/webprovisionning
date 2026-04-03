@@ -1,8 +1,9 @@
+import { db } from "@/lib/db";
 import { normalizeMac } from "@/lib/provisioning/vendors";
 
 export { normalizeMac };
 
-/** Variante `00:0B:82:92:DE:93` pour les anciennes entrées / imports CSV. */
+/** Affichage lisible (ex. messages d’erreur CSV). */
 export function macAsColonSeparated(normalized12: string): string {
   const pairs = normalized12.match(/.{2}/g);
   if (!pairs || pairs.length !== 6) return normalized12;
@@ -10,17 +11,30 @@ export function macAsColonSeparated(normalized12: string): string {
 }
 
 /**
- * Trouve un téléphone par MAC, que la base stocke `000B8292DE93` ou `00:0B:82:92:DE:93`.
- * @param excludePhoneId — pour les mises à jour, exclure le téléphone en cours d’édition
+ * Résout l’id du téléphone en comparant la MAC « canonique » (12 hex majuscules),
+ * quel que soit le format stocké (`000B8292DE93`, `00:0B:…`, `00-0B-…`, casse mixte, etc.).
  */
-export function phoneMacMatchWhere(macInput: string, options?: { excludePhoneId?: string }) {
+export async function findPhoneIdByMacCanonical(
+  macInput: string,
+  options?: { excludePhoneId?: string }
+): Promise<string | null> {
   const normalized = normalizeMac(macInput);
-  const colon = macAsColonSeparated(normalized);
-  const orClause = {
-    OR: [{ macAddress: normalized }, { macAddress: colon }],
-  };
-  if (!options?.excludePhoneId) return orClause;
-  return {
-    AND: [orClause, { NOT: { id: options.excludePhoneId } }],
-  };
+  if (normalized.length !== 12) return null;
+
+  if (options?.excludePhoneId) {
+    const rows = await db.$queryRaw<{ id: string }[]>`
+      SELECT id FROM "Phone"
+      WHERE UPPER(REGEXP_REPLACE("macAddress", '[^a-fA-F0-9]', '', 'g')) = ${normalized}
+        AND id <> ${options.excludePhoneId}
+      LIMIT 1
+    `;
+    return rows[0]?.id ?? null;
+  }
+
+  const rows = await db.$queryRaw<{ id: string }[]>`
+    SELECT id FROM "Phone"
+    WHERE UPPER(REGEXP_REPLACE("macAddress", '[^a-fA-F0-9]', '', 'g')) = ${normalized}
+    LIMIT 1
+  `;
+  return rows[0]?.id ?? null;
 }

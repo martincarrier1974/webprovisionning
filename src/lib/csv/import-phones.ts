@@ -1,7 +1,7 @@
 import { parse } from "csv-parse/sync";
 
 import { db } from "@/lib/db";
-import { macAsColonSeparated, phoneMacMatchWhere } from "@/lib/mac-address";
+import { findPhoneIdByMacCanonical, macAsColonSeparated } from "@/lib/mac-address";
 
 type ImportRow = {
   mac_address: string;
@@ -84,10 +84,8 @@ export async function importPhonesCsv(csvText: string): Promise<ImportResult> {
       siteId = site.id;
     }
 
-    const existing = await db.phone.findFirst({
-      where: phoneMacMatchWhere(mac),
-    });
-    if (existing) {
+    const existingId = await findPhoneIdByMacCanonical(mac);
+    if (existingId) {
       result.skipped++;
       continue;
     }

@@ -1,7 +1,7 @@
 import { ProvisioningSource, type ProvisioningRule, type Vendor } from "@prisma/client";
 
 import { db } from "@/lib/db";
-import { phoneMacMatchWhere } from "@/lib/mac-address";
+import { findPhoneIdByMacCanonical } from "@/lib/mac-address";
 
 const sourcePriority: Record<ProvisioningSource | "TEMPLATE", number> = {
   DEFAULT: 0,
@@ -70,8 +70,11 @@ export type PhoneProvisioningContext = {
 };
 
 export async function getProvisioningContextByMac(macAddress: string) {
-  return db.phone.findFirst({
-    where: phoneMacMatchWhere(macAddress),
+  const id = await findPhoneIdByMacCanonical(macAddress);
+  if (!id) return null;
+
+  return db.phone.findUnique({
+    where: { id },
     include: {
       client: {
         select: {

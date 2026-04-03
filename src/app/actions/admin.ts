@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { requireAdmin } from "@/lib/auth/dal";
 import { db } from "@/lib/db";
-import { phoneMacMatchWhere } from "@/lib/mac-address";
+import { findPhoneIdByMacCanonical } from "@/lib/mac-address";
 import { type ActionState } from "@/lib/auth/definitions";
 import {
   createClientSchema,
@@ -269,11 +269,8 @@ export async function createPhoneAction(
     }
   }
 
-  const existingPhone = await db.phone.findFirst({
-    where: phoneMacMatchWhere(parsed.data.macAddress),
-  });
-
-  if (existingPhone) {
+  const existingId = await findPhoneIdByMacCanonical(parsed.data.macAddress);
+  if (existingId) {
     return { error: "Un téléphone avec cette MAC existe déjà." };
   }
 
@@ -342,11 +339,10 @@ export async function updatePhoneAction(formData: FormData) {
     }
   }
 
-  const existingPhone = await db.phone.findFirst({
-    where: phoneMacMatchWhere(parsed.data.macAddress, { excludePhoneId: parsed.data.id }),
+  const duplicateId = await findPhoneIdByMacCanonical(parsed.data.macAddress, {
+    excludePhoneId: parsed.data.id,
   });
-
-  if (existingPhone) {
+  if (duplicateId) {
     throw new Error("Un téléphone avec cette MAC existe déjà.");
   }
 

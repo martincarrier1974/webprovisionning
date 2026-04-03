@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 
 import { PhoneConfigTabs } from "@/components/phones/phone-config-tabs";
 import { db } from "@/lib/db";
+import { normalizeMac } from "@/lib/provisioning/vendors";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -39,7 +40,8 @@ export default async function PhoneConfigPage({ params }: Props) {
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
   const vendor = phone.phoneModel.vendor.toLowerCase();
-  const provisioningUrl = `${baseUrl}/api/provisioning/${vendor}/${phone.macAddress}`;
+  const macForUrl = normalizeMac(phone.macAddress);
+  const provisioningUrl = `${baseUrl}/api/provisioning/${vendor}/${macForUrl}`;
 
   return (
     <>
