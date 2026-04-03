@@ -45,6 +45,26 @@ export function TabDiagnostics({ phone: initialPhone }: { phone: Phone }) {
   const [savingIp, setSavingIp] = useState(false);
   const [ipMsg, setIpMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
+  async function discoverIp() {
+    setSavingIp(true);
+    setIpMsg(null);
+    try {
+      const res = await fetch(`/api/admin/phones/${phone.id}/discover-ip`, { method: "POST" });
+      const json = await res.json();
+      if (json.ok && json.ip) {
+        setIpEdit(json.ip);
+        setPhone(p => ({ ...p, ipAddress: json.ip }));
+        setIpMsg({ ok: true, text: `✓ IP détectée : ${json.ip}` });
+      } else {
+        setIpMsg({ ok: false, text: json.error ?? "Introuvable." });
+      }
+    } catch {
+      setIpMsg({ ok: false, text: "Erreur réseau." });
+    } finally {
+      setSavingIp(false);
+    }
+  }
+
   async function saveIp() {
     setSavingIp(true);
     setIpMsg(null);
@@ -115,10 +135,13 @@ export function TabDiagnostics({ phone: initialPhone }: { phone: Phone }) {
               {phone.sipServer || <span style={{ opacity: 0.5 }}>Non configuré</span>}
             </div>
           </div>
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
             {ipMsg && <span style={{ fontSize: 12, color: ipMsg.ok ? "#4ade80" : "#f87171" }}>{ipMsg.text}</span>}
+            <button className="btn btn-ghost btn-sm" onClick={discoverIp} disabled={savingIp} title="Cherche l'IP dans la table ARP du serveur">
+              {savingIp ? "..." : "🔍 Détecter"}
+            </button>
             <button className="btn btn-primary btn-sm" onClick={saveIp} disabled={savingIp}>
-              {savingIp ? "..." : "Sauvegarder"}
+              Sauvegarder
             </button>
           </div>
         </div>
