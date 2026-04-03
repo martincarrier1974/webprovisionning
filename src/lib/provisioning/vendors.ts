@@ -567,6 +567,42 @@ function buildProgrammableKeyEntries(vendor: SupportedVendor, context: PhoneProv
   return entries;
 }
 
+export function renderGrandstreamXml(
+  context: PhoneProvisioningContext,
+  resolvedEntries: ResolvedRuleEntry[] = []
+): string {
+  const normalizedMac = normalizeMac(context.macAddress);
+  const mergedRules = new Map<string, string>();
+
+  for (const [key, value] of buildBaseEntries("grandstream", context)) {
+    mergedRules.set(key, value);
+  }
+  for (const [key, value] of buildSipAccountEntries("grandstream", context)) {
+    mergedRules.set(key, value);
+  }
+  for (const [key, value] of buildProgrammableKeyEntries("grandstream", context)) {
+    mergedRules.set(key, value);
+  }
+  for (const entry of resolvedEntries) {
+    mergedRules.set(entry.key, entry.value);
+  }
+
+  const items = Array.from(mergedRules.entries())
+    .filter(([, v]) => v !== "")
+    .map(([k, v]) => `  <P id="${k}">${v.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</P>`)
+    .join("\n");
+
+  return [
+    `<?xml version="1.0" encoding="UTF-8"?>`,
+    `<!-- Auto-generated for ${normalizedMac} | ${context.phoneModel.displayName} -->`,
+    `<gs_provision version="1">`,
+    `  <config version="1">`,
+    items,
+    `  </config>`,
+    `</gs_provision>`,
+  ].join("\n");
+}
+
 export function renderProvisioningConfig(
   vendor: SupportedVendor,
   context: PhoneProvisioningContext,

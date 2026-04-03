@@ -7,6 +7,7 @@ import {
   normalizeMac,
   prismaVendorToSupportedVendor,
   renderProvisioningConfig,
+  renderGrandstreamXml,
 } from "@/lib/provisioning/vendors";
 import { sendWebhook } from "@/lib/webhooks/notify";
 
@@ -17,6 +18,7 @@ export async function GET(
   const { mac: rawMac } = await context.params;
 
   // Grandstream requests: cfg<MAC>.xml, cfg<MAC>, <MAC>.xml or bare <MAC>
+  const isXmlRequest = /\.(xml|cfg)$/i.test(rawMac);
   const mac = rawMac
     .replace(/^cfg/i, "")
     .replace(/\.(xml|cfg|txt)$/i, "")
@@ -45,11 +47,16 @@ export async function GET(
   }
 
   const resolved = await getResolvedProvisioningRules(phone);
-  const content = renderProvisioningConfig(
-    prismaVendorToSupportedVendor(phone.phoneModel.vendor),
-    phone,
-    resolved.resolvedEntries
-  );
+
+  // GXP phones request cfg<MAC>.xml — return XML format; bare MAC = text/plain (preview)
+  const useXml = isXmlRequest;
+  const content = useXml
+    ? renderGrandstreamXml(phone, resolved.resolvedEntries)
+    : renderProvisioningConfig(
+        prismaVendorToSupportedVendor(phone.phoneModel.vendor),
+        phone,
+        resolved.resolvedEntries
+      );
 
   await db.phone.update({
     where: { id: phone.id },
@@ -77,7 +84,7 @@ export async function GET(
   return new NextResponse(content, {
     status: 200,
     headers: {
-      "content-type": "text/plain; charset=utf-8",
+      "content-type": useXml ? "application/xml; charset=utf-8" : "text/plain; charset=utf-8",
       "x-provisioning-vendor": "grandstream",
       "x-device-mac": normalizedMac,
       "x-provisioning-rules": String(resolved.resolvedEntries.length),
