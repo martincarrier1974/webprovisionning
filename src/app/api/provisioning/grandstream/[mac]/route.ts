@@ -14,7 +14,13 @@ export async function GET(
   request: Request,
   context: RouteContext<"/api/provisioning/grandstream/[mac]">
 ) {
-  const { mac } = await context.params;
+  const { mac: rawMac } = await context.params;
+
+  // Grandstream requests: cfg<MAC>.xml, cfg<MAC>, <MAC>.xml or bare <MAC>
+  const mac = rawMac
+    .replace(/^cfg/i, "")
+    .replace(/\.(xml|cfg|txt)$/i, "")
+    .replace(/[^a-fA-F0-9]/g, "");
 
   if (!isValidMac(mac)) {
     return NextResponse.json({ ok: false, error: "Invalid MAC address" }, { status: 400 });
