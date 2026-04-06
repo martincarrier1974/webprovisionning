@@ -20,7 +20,17 @@ type Phone = {
   phoneModel: { vendor: string };
 };
 
-export function TabProvisioning({ phone, provisioningUrl }: { phone: Phone; provisioningUrl: string }) {
+export function TabProvisioning({
+  phone,
+  provisioningFetchPath,
+  provisioningDisplayUrl,
+  grandstreamConfigServerUrl,
+}: {
+  phone: Phone;
+  provisioningFetchPath: string;
+  provisioningDisplayUrl: string;
+  grandstreamConfigServerUrl: string | null;
+}) {
   const [pushing, setPushing] = useState(false);
   const [pushResult, setPushResult] = useState<{ ok: boolean; text: string } | null>(null);
   const [previewConfig, setPreviewConfig] = useState<string | null>(null);
@@ -28,18 +38,22 @@ export function TabProvisioning({ phone, provisioningUrl }: { phone: Phone; prov
   const [logs, setLogs] = useState<Log[]>(phone.provisionLogs);
   const [loadingLogs, setLoadingLogs] = useState(false);
 
+  const isGrandstream = phone.phoneModel.vendor.toUpperCase() === "GRANDSTREAM";
+  const copyUrl = isGrandstream && grandstreamConfigServerUrl ? grandstreamConfigServerUrl : provisioningDisplayUrl;
+
   async function testConfig() {
     setPushing(true);
     setPushResult(null);
     try {
-      const res = await fetch(provisioningUrl);
+      const res = await fetch(provisioningFetchPath);
       if (res.ok) {
         setPushResult({ ok: true, text: `✓ Réponse ${res.status} — config générée avec succès.` });
       } else {
         setPushResult({ ok: false, text: `✗ Erreur ${res.status} — ${res.statusText}` });
       }
-    } catch {
-      setPushResult({ ok: false, text: "✗ Erreur réseau." });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setPushResult({ ok: false, text: `✗ Erreur réseau (${msg}). Si le tableau de bord n’est pas sur le même site que l’API, activez NEXT_PUBLIC_APP_URL ou testez depuis le déploiement Railway.` });
     } finally {
       setPushing(false);
     }
@@ -49,7 +63,7 @@ export function TabProvisioning({ phone, provisioningUrl }: { phone: Phone; prov
     setLoadingPreview(true);
     setPreviewConfig(null);
     try {
-      const res = await fetch(provisioningUrl);
+      const res = await fetch(provisioningFetchPath);
       const text = await res.text();
       setPreviewConfig(text);
     } catch {
@@ -84,11 +98,27 @@ export function TabProvisioning({ phone, provisioningUrl }: { phone: Phone; prov
         </div>
         <div style={{ padding: "16px 20px", display: "grid", gap: 16 }}>
           <div>
-            <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 6 }}>URL ({phone.phoneModel.vendor})</div>
-            <div style={{ display: "flex", gap: 8 }}>
-              <input className="form-input" readOnly value={provisioningUrl} style={{ fontFamily: "monospace", fontSize: 12, flex: 1 }} />
-              <button className="btn btn-ghost btn-sm" onClick={() => navigator.clipboard.writeText(provisioningUrl)}>Copier</button>
+            <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 6 }}>
+              {isGrandstream ? "URL sur le téléphone (Config Server Path)" : `URL (${phone.phoneModel.vendor})`}
             </div>
+            {isGrandstream && grandstreamConfigServerUrl && (
+              <p style={{ fontSize: 12, color: "var(--muted)", marginBottom: 8 }}>
+                Le poste ajoute automatiquement le fichier <code style={{ fontFamily: "monospace" }}>cfg&lt;MAC&gt;.xml</code> à cette adresse. Le bouton « Tester » appelle l’API du tableau de bord (même origine).
+              </p>
+            )}
+            <div style={{ display: "flex", gap: 8 }}>
+              <input className="form-input" readOnly value={copyUrl} style={{ fontFamily: "monospace", fontSize: 12, flex: 1 }} />
+              <button className="btn btn-ghost btn-sm" onClick={() => navigator.clipboard.writeText(copyUrl)}>Copier</button>
+            </div>
+            {isGrandstream && (
+              <div style={{ marginTop: 10 }}>
+                <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 6 }}>Test / aperçu (fichier généré pour cette MAC)</div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <input className="form-input" readOnly value={provisioningDisplayUrl} style={{ fontFamily: "monospace", fontSize: 12, flex: 1 }} />
+                  <button className="btn btn-ghost btn-sm" type="button" onClick={() => navigator.clipboard.writeText(provisioningDisplayUrl)}>Copier</button>
+                </div>
+              </div>
+            )}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
             <div>

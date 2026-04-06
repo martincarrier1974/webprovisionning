@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation";
+import { headers } from "next/headers";
 
 import { PhoneConfigTabs } from "@/components/phones/phone-config-tabs";
 import { db } from "@/lib/db";
+import { getPublicOriginFromHeaders } from "@/lib/public-origin";
 import { normalizeMac } from "@/lib/provisioning/vendors";
 
 type Props = {
@@ -38,10 +40,20 @@ export default async function PhoneConfigPage({ params }: Props) {
     select: { id: true, version: true, status: true, isDefault: true },
   });
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
+  const hdrs = await headers();
+  const publicOrigin = getPublicOriginFromHeaders(hdrs);
   const vendor = phone.phoneModel.vendor.toLowerCase();
   const macForUrl = normalizeMac(phone.macAddress);
-  const provisioningUrl = `${baseUrl}/api/provisioning/${vendor}/${macForUrl}`;
+  /** Toujours relatif : le bouton « Tester » fait un fetch same-origin (évite CORS). */
+  const provisioningFetchPath = `/api/provisioning/${vendor}/${macForUrl}`;
+  const provisioningDisplayUrl = publicOrigin ? `${publicOrigin}${provisioningFetchPath}` : provisioningFetchPath;
+  /** Grandstream : l’URL à saisir sur le poste est le répertoire (le téléphone ajoute cfg&lt;MAC&gt;.xml). */
+  const grandstreamConfigServerUrl =
+    vendor === "grandstream"
+      ? publicOrigin
+        ? `${publicOrigin}/api/provisioning/grandstream/`
+        : "/api/provisioning/grandstream/"
+      : null;
 
   return (
     <>
@@ -73,7 +85,13 @@ export default async function PhoneConfigPage({ params }: Props) {
           </div>
         </div>
 
-        <PhoneConfigTabs phone={phone} firmwares={firmwares} provisioningUrl={provisioningUrl} />
+        <PhoneConfigTabs
+          phone={phone}
+          firmwares={firmwares}
+          provisioningFetchPath={provisioningFetchPath}
+          provisioningDisplayUrl={provisioningDisplayUrl}
+          grandstreamConfigServerUrl={grandstreamConfigServerUrl}
+        />
       </div>
     </>
   );

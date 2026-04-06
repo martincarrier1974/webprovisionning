@@ -54,7 +54,9 @@ type Firmware = { id: string; version: string; status: string; isDefault: boolea
 type Props = {
   phone: Phone;
   firmwares: Firmware[];
-  provisioningUrl: string;
+  provisioningFetchPath: string;
+  provisioningDisplayUrl: string;
+  grandstreamConfigServerUrl: string | null;
 };
 
 const TABS = [
@@ -73,7 +75,13 @@ const TABS = [
   { id: "diagnostics", label: "Diagnostics" },
 ];
 
-export function PhoneConfigTabs({ phone, firmwares, provisioningUrl }: Props) {
+export function PhoneConfigTabs({
+  phone,
+  firmwares,
+  provisioningFetchPath,
+  provisioningDisplayUrl,
+  grandstreamConfigServerUrl,
+}: Props) {
   const [activeTab, setActiveTab] = useState("sip");
 
   return (
@@ -114,7 +122,14 @@ export function PhoneConfigTabs({ phone, firmwares, provisioningUrl }: Props) {
           }))}
         />
       )}
-      {activeTab === "provisioning" && <TabProvisioning phone={phone} provisioningUrl={provisioningUrl} />}
+      {activeTab === "provisioning" && (
+        <TabProvisioning
+          phone={phone}
+          provisioningFetchPath={provisioningFetchPath}
+          provisioningDisplayUrl={provisioningDisplayUrl}
+          grandstreamConfigServerUrl={grandstreamConfigServerUrl}
+        />
+      )}
       {activeTab === "diagnostics" && <TabDiagnostics phone={phone} />}
     </div>
   );
