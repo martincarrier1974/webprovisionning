@@ -188,6 +188,7 @@ function buildBaseEntries(vendor: SupportedVendor, context: PhoneProvisioningCon
       ["auto_provision.repeat.enable", "1"],
       ["auto_provision.repeat.minutes", "10080"],  // hebdomadaire
       ["auto_provision.check.new_config", "1"],
+      ["auto_provision.overwrite_mode", "1"],       // 1=forcer écrasement des réglages manuels du téléphone
 
       // ── Time / Date / Language ────────────────────────────────────────
       ["local_time.time_zone_name", timezone],
@@ -581,31 +582,46 @@ function buildProgrammableKeyEntries(vendor: SupportedVendor, context: PhoneProv
   const entries: Array<[string, string]> = [];
 
   if (vendor === "yealink") {
-    for (const key of keys) {
-      const idx = key.keyIndex;
-      const modeMap: Record<string, string> = {
-        BLF: "16",
-        SPEED_DIAL: "13",
-        CALL_PARK: "19",
-        INTERCOM: "5",
-        FORWARD: "4",
-        DND: "6",
-        RECORD: "11",
-        DEFAULT: "0",
-        NONE: "0",
-      };
-      const typeCode = modeMap[key.mode] ?? "0";
-      const val = key.value ?? "";
-      entries.push([`linekey.${idx}.type`, typeCode]);
-      entries.push([`linekey.${idx}.line`, "1"]);
-      entries.push([`linekey.${idx}.value`, val]);
-      entries.push([`linekey.${idx}.label`, key.description ?? ""]);
-      // BLF requiert aussi extension (numéro à surveiller) et pickup_code
-      if (key.mode === "BLF") {
-        entries.push([`linekey.${idx}.extension`, val]);
-        entries.push([`linekey.${idx}.pickup_code`, "**"]);
+    const physicalCapacity = context.phoneModel.lineCapacity ?? 0;
+    const modeMap: Record<string, string> = {
+      BLF: "16",
+      SPEED_DIAL: "13",
+      CALL_PARK: "19",
+      INTERCOM: "5",
+      FORWARD: "4",
+      DND: "6",
+      RECORD: "11",
+      DEFAULT: "0",
+      NONE: "0",
+    };
+
+    // Construire un map keyIndex → key pour accès rapide
+    const keyMap = new Map(keys.map(k => [k.keyIndex, k]));
+
+    // Toujours écrire TOUTES les touches (jusqu'à lineCapacity) pour écraser les réglages manuels
+    const totalKeys = Math.max(physicalCapacity, keys.length > 0 ? Math.max(...keys.map(k => k.keyIndex)) : 0);
+    for (let idx = 1; idx <= totalKeys; idx++) {
+      const key = keyMap.get(idx);
+      if (key && key.mode !== "DEFAULT" && key.mode !== "NONE") {
+        const typeCode = modeMap[key.mode] ?? "0";
+        const val = key.value ?? "";
+        entries.push([`linekey.${idx}.type`, typeCode]);
+        entries.push([`linekey.${idx}.line`, "1"]);
+        entries.push([`linekey.${idx}.value`, val]);
+        entries.push([`linekey.${idx}.label`, key.description ?? ""]);
+        if (key.mode === "BLF") {
+          entries.push([`linekey.${idx}.extension`, val]);
+          entries.push([`linekey.${idx}.pickup_code`, "**"]);
+        }
+        if (key.locked) entries.push([`linekey.${idx}.locked`, "1"]);
+      } else {
+        // Touche non configurée → forcer reset à Line (type=0 = N/A serait idéal mais
+        // Yealink T33G garde au moins une ligne SIP active sur linekey 1)
+        entries.push([`linekey.${idx}.type`, idx === 1 ? "15" : "0"]); // 15=Line pour key1, 0=N/A pour les autres
+        entries.push([`linekey.${idx}.value`, ""]);
+        entries.push([`linekey.${idx}.label`, ""]);
+        entries.push([`linekey.${idx}.line`, "1"]);
       }
-      if (key.locked) entries.push([`linekey.${idx}.locked`, "1"]);
     }
   } else {
     // Grandstream: MPK physiques (P323+) et VMPK (P1400+) selon modèle
