@@ -45,14 +45,44 @@ function splitHostPort(value: string | null | undefined): { host: string; port: 
   const raw = (value ?? "").trim();
   if (raw.length === 0) return { host: "", port: "5060" };
 
-  // If user entered host:port, keep host only and move port to the dedicated field.
-  // Yealink UI has separate "Server Host" and "Port" inputs; providing host:port can misapply.
-  const m = raw.match(/^(.*):(\d{2,5})$/);
-  if (!m) return { host: raw, port: "5060" };
+  // [IPv6]:port
+  if (raw.startsWith("[") && raw.includes("]:")) {
+    const end = raw.indexOf("]:");
+    const port = raw.slice(end + 2);
+    if (/^\d{2,5}$/.test(port)) {
+      return { host: raw.slice(0, end + 1), port };
+    }
+  }
 
-  const host = m[1]?.trim() ?? "";
-  const port = m[2] ?? "5060";
-  return { host, port };
+  // hostname or IPv4: last colon + numeric port (avoids greedy (.*) matching wrong segment)
+  const lastColon = raw.lastIndexOf(":");
+  if (lastColon > 0) {
+    const possibleHost = raw.slice(0, lastColon).trim();
+    const possiblePort = raw.slice(lastColon + 1);
+    if (/^\d{2,5}$/.test(possiblePort)) {
+      if (possibleHost.includes(":") && !possibleHost.startsWith("[")) {
+        return { host: raw, port: "5060" };
+      }
+      return { host: possibleHost, port: possiblePort };
+    }
+  }
+
+  return { host: raw, port: "5060" };
+}
+
+/** After merging rules, split any account.*.sip_server.*.address that still contains :port */
+function normalizeYealinkSipServerAddresses(mergedRules: Map<string, string>) {
+  const addressKeyRe = /^account\.(\d+)\.sip_server\.(\d+)\.address$/;
+  for (const [key, value] of [...mergedRules.entries()]) {
+    const m = key.match(addressKeyRe);
+    if (!m) continue;
+    const raw = (value ?? "").trim();
+    if (!raw.includes(":")) continue;
+    const split = splitHostPort(raw);
+    if (split.host === raw) continue;
+    mergedRules.set(key, split.host);
+    mergedRules.set(`account.${m[1]}.sip_server.${m[2]}.port`, split.port);
+  }
 }
 
 function buildBaseEntries(vendor: SupportedVendor, context: PhoneProvisioningContext) {
@@ -77,6 +107,10 @@ function buildBaseEntries(vendor: SupportedVendor, context: PhoneProvisioningCon
       ["account.1.sip_server.1.transport_type", "0"],  // 0=UDP
       ["account.1.sip_server.1.expires", "60"],
       ["account.1.sip_server.1.retry_counts", "3"],
+      // Backup SIP server: must be sent explicitly or Yealink keeps previous values on device
+      ["account.1.sip_server.2.address", ""],
+      ["account.1.sip_server.2.port", "5060"],
+      ["account.1.sip_server.2.transport_type", "0"],
       ["account.1.reg_fail_retry_interval", "20"],
       ["account.1.subscribe_mwi", "0"],
       ["account.1.100rel_enable", "0"],
@@ -479,14 +513,15 @@ function buildSipAccountEntries(vendor: SupportedVendor, context: PhoneProvision
   for (const acc of extras) {
     const i = acc.accountIndex;
     if (vendor === "yealink") {
+      const accSip = splitHostPort(acc.sipServer);
       entries.push([`account.${i}.enable`, "1"]);
       entries.push([`account.${i}.label`, acc.label || acc.sipUsername || `Account ${i}`]);
       entries.push([`account.${i}.display_name`, acc.displayName || acc.label || acc.sipUsername || ""]);
       entries.push([`account.${i}.user_name`, acc.sipUsername || ""]);
       entries.push([`account.${i}.auth_name`, acc.sipUsername || ""]);
       entries.push([`account.${i}.password`, acc.sipPassword || ""]);
-      entries.push([`account.${i}.sip_server.1.address`, acc.sipServer || ""]);
-      entries.push([`account.${i}.sip_server.1.port`, "5060"]);
+      entries.push([`account.${i}.sip_server.1.address`, accSip.host]);
+      entries.push([`account.${i}.sip_server.1.port`, accSip.port]);
     } else if (vendor === "grandstream") {
       // Grandstream: account 2 starts at P272 offsets (P272-P279 for account 2, etc.)
       // Each account block is offset by 100 from account 1 (P47=username, P47+100*(i-1))
@@ -643,6 +678,10 @@ export function renderProvisioningConfig(
 
   for (const entry of resolvedEntries) {
     mergedRules.set(entry.key, entry.value);
+  }
+
+  if (vendor === "yealink") {
+    normalizeYealinkSipServerAddresses(mergedRules);
   }
 
   // Snom uses XML format
