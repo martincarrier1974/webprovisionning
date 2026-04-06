@@ -145,7 +145,8 @@ function buildBaseEntries(vendor: SupportedVendor, context: PhoneProvisioningCon
       ["security.user_password", context.webPassword || "user"],
 
       // ── Auto Provision ────────────────────────────────────────────────
-      ["auto_provision.server.url", `${baseUrl}/api/provisioning/yealink/${context.macAddress}`],
+      // Directory URL + trailing slash: Yealink requests y000000000000.cfg then <MAC>.cfg (not a single full file URL).
+      ["auto_provision.server.url", `${baseUrl}/api/provisioning/yealink/`],
       ["auto_provision.repeat.enable", "1"],
       ["auto_provision.repeat.minutes", "10080"],  // hebdomadaire
       ["auto_provision.check.new_config", "1"],
