@@ -161,6 +161,10 @@ export function PhonesTable({ phones }: { phones: Phone[] }) {
             <button className="btn btn-ghost btn-sm" onClick={() => setSelected(new Set())}>Désélectionner</button>
           )}
         </div>
+        <p style={{ width: "100%", margin: 0, paddingTop: 10, fontSize: 12, color: "var(--muted)", lineHeight: 1.55, borderTop: "1px solid #222" }}>
+          <strong style={{ color: "var(--text)" }}>Important :</strong> « OK » indique seulement que le <strong>serveur</strong> a enregistré ou régénéré la config.
+          Aucun fichier n’est envoyé au téléphone par cette action : le poste doit <strong>télécharger</strong> lui‑même l’URL de provisioning (bouton « Provision » / « Upgrade and Provisioning » sur l’appareil, redémarrage, ou selon l’intervalle configuré).
+        </p>
       </div>
 
       {/* ── Résultats bulk ─────────────────────────────────────── */}

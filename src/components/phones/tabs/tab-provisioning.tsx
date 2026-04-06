@@ -96,6 +96,10 @@ export function TabProvisioning({
         <div style={{ padding: "12px 20px", background: "#111", borderBottom: "1px solid var(--card-border)" }}>
           <span style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--accent)" }}>URL de provisioning</span>
         </div>
+        <div style={{ padding: "12px 20px", fontSize: 12, color: "var(--muted)", lineHeight: 1.55, borderBottom: "1px solid var(--card-border)", background: "rgba(0,0,0,0.25)" }}>
+          Le message « ✓ Réponse 200 » du bouton « Tester » vérifie seulement que <strong>ce site</strong> peut générer le fichier.
+          Pour que le <strong>téléphone</strong> reçoive la config, il doit effectuer une requête HTTP(S) vers l’URL ci‑dessous (réglage sur le poste + Provision / reboot). Rien n’est poussé vers le téléphone depuis ce tableau de bord.
+        </div>
         <div style={{ padding: "16px 20px", display: "grid", gap: 16 }}>
           <div>
             <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 6 }}>
