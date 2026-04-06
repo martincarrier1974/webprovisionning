@@ -252,7 +252,7 @@ function buildBaseEntries(vendor: SupportedVendor, context: PhoneProvisioningCon
       ["account.1.rtcp.enable", "1"],
 
       // ── Programmable keys globals ─────────────────────────────────────
-      ["linekey.key_mode", "0"],                   // 0=LineMode
+      ["linekey.key_mode", "1"],                   // 1=AccountMode — permet de configurer les touches librement (BLF, SpeedDial, etc.)
       ["linekey.show_label", "1"],
       ["features.blf_pickup_code", "**"],
 
@@ -595,10 +595,16 @@ function buildProgrammableKeyEntries(vendor: SupportedVendor, context: PhoneProv
         NONE: "0",
       };
       const typeCode = modeMap[key.mode] ?? "0";
+      const val = key.value ?? "";
       entries.push([`linekey.${idx}.type`, typeCode]);
-      entries.push([`linekey.${idx}.value`, key.value ?? ""]);
-      entries.push([`linekey.${idx}.label`, key.description ?? ""]);
       entries.push([`linekey.${idx}.line`, "1"]);
+      entries.push([`linekey.${idx}.value`, val]);
+      entries.push([`linekey.${idx}.label`, key.description ?? ""]);
+      // BLF requiert aussi extension (numéro à surveiller) et pickup_code
+      if (key.mode === "BLF") {
+        entries.push([`linekey.${idx}.extension`, val]);
+        entries.push([`linekey.${idx}.pickup_code`, "**"]);
+      }
       if (key.locked) entries.push([`linekey.${idx}.locked`, "1"]);
     }
   } else {
