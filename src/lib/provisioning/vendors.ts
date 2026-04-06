@@ -41,6 +41,15 @@ function yesNo(value: boolean) {
   return value ? "1" : "0";
 }
 
+/** L’UI envoie « Account1 »…« Account6 » ; les P-codes MPK/VMPK Grandstream attendent 1…6. */
+function grandstreamAccountIndexFromUi(account: string | null | undefined): string {
+  const raw = (account ?? "").trim();
+  const m = /^Account(\d+)$/i.exec(raw);
+  if (m) return m[1];
+  if (/^\d+$/.test(raw)) return raw;
+  return "1";
+}
+
 function splitHostPort(value: string | null | undefined): { host: string; port: string } {
   const raw = (value ?? "").trim();
   if (raw.length === 0) return { host: "", port: "5060" };
@@ -609,17 +618,18 @@ function buildProgrammableKeyEntries(vendor: SupportedVendor, context: PhoneProv
       const idx = key.keyIndex - 1; // 0-indexed
       const typeCode = modeMap[key.mode] ?? "0";
 
+      const acct = grandstreamAccountIndexFromUi(key.account);
       if (hasVmpk && key.keyIndex > physicalCapacity) {
         // VMPK (Virtual MPK) — P1400-based, 0-indexed global
         const vIdx = idx; // keyIndex - 1
         entries.push([`P${1400 + vIdx * 4}`, typeCode]);          // VMPK mode
-        entries.push([`P${1401 + vIdx * 4}`, key.account ?? "1"]); // account
+        entries.push([`P${1401 + vIdx * 4}`, acct]);               // account (1–6)
         entries.push([`P${1402 + vIdx * 4}`, key.value ?? ""]);    // value
         entries.push([`P${1403 + vIdx * 4}`, key.description ?? ""]); // label
       } else {
         // MPK physique — P323-based
         entries.push([`P${323 + idx * 4}`, typeCode]);
-        entries.push([`P${324 + idx * 4}`, key.account ?? "1"]);
+        entries.push([`P${324 + idx * 4}`, acct]);
         entries.push([`P${325 + idx * 4}`, key.value ?? ""]);
         entries.push([`P${326 + idx * 4}`, key.description ?? ""]);
       }

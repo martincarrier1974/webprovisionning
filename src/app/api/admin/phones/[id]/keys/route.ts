@@ -24,7 +24,7 @@ export async function POST(
 ) {
   await requireAdmin();
   const { id } = await context.params;
-  const { keys } = await request.json() as {
+  const { enabled, keys } = await request.json() as {
     enabled: boolean;
     keys: { keyIndex: number; account: string; description: string; mode: string; locked: boolean; value: string }[];
   };
@@ -32,20 +32,33 @@ export async function POST(
   const phone = await db.phone.findUnique({ where: { id } });
   if (!phone) return NextResponse.json({ ok: false, error: "Téléphone introuvable." }, { status: 404 });
 
-  // Delete existing and recreate (simpler than upsert for bulk)
   await db.phoneProgrammableKey.deleteMany({ where: { phoneId: id } });
 
-  await db.phoneProgrammableKey.createMany({
-    data: keys.map(k => ({
-      phoneId: id,
-      keyIndex: k.keyIndex,
-      account: k.account || null,
-      description: k.description || null,
-      mode: k.mode,
-      locked: k.locked,
-      value: k.value || null,
-    })),
-  });
+  if (!enabled) {
+    await db.auditLog.create({
+      data: {
+        action: "phone.keys.update",
+        entityType: "Phone",
+        entityId: id,
+        metadata: JSON.stringify({ keysCount: 0, disabled: true }),
+      },
+    });
+    return NextResponse.json({ ok: true });
+  }
+
+  if (keys.length > 0) {
+    await db.phoneProgrammableKey.createMany({
+      data: keys.map(k => ({
+        phoneId: id,
+        keyIndex: k.keyIndex,
+        account: k.account || null,
+        description: k.description || null,
+        mode: k.mode,
+        locked: k.locked,
+        value: k.value || null,
+      })),
+    });
+  }
 
   await db.auditLog.create({
     data: {

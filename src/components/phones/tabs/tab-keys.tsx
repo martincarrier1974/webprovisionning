@@ -174,6 +174,11 @@ export function TabKeys({ phone, initialKeys }: Props) {
             {phone.phoneModel.vendor} {modelCode} ·{" "}
             {physicalCapacity > 0 ? `${physicalCapacity} MPK physiques` : "Aucun MPK physique"}
             {supportsVmpk ? ` + ${VMPK_CAPACITY} VMPK disponibles` : ""}
+            {isGrandstream && (
+              <span style={{ display: "block", marginTop: 6, fontSize: 12 }}>
+                Après <strong>Sauvegarder</strong>, lancez <strong>Provision</strong> sur le poste (ou un reboot) : les touches sont dans le fichier XML ; le téléphone doit le télécharger à nouveau.
+              </span>
+            )}
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
