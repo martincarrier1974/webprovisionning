@@ -40,7 +40,20 @@ export async function GET(
     if (/^cfg/i.test(rawMac) && /\.xml$/i.test(rawMac)) {
       return emptyGrandstreamProvisionXml(`non-mac stub ${rawMac}`);
     }
-    return NextResponse.json({ ok: false, error: "Invalid MAC address" }, { status: 400 });
+    const errBody = `<?xml version="1.0" encoding="UTF-8" ?>
+<gs_provision version="1">
+<config version="1">
+<!-- error: invalid MAC in request path -->
+</config>
+</gs_provision>`;
+    return new NextResponse(errBody, {
+      status: 400,
+      headers: {
+        "content-type": "application/xml; charset=utf-8",
+        "x-provisioning-vendor": "grandstream",
+        "x-provisioning-error": "invalid-mac",
+      },
+    });
   }
 
   const normalizedMac = normalizeMac(mac);
@@ -58,7 +71,21 @@ export async function GET(
       },
     });
 
-    return NextResponse.json({ ok: false, error: "Phone not found" }, { status: 404 });
+    // XML plutôt que JSON : certains téléphones parsent mal une erreur JSON comme fichier de config.
+    const body = `<?xml version="1.0" encoding="UTF-8" ?>
+<gs_provision version="1">
+<config version="1">
+<!-- error: phone not registered for MAC ${normalizedMac} -->
+</config>
+</gs_provision>`;
+    return new NextResponse(body, {
+      status: 404,
+      headers: {
+        "content-type": "application/xml; charset=utf-8",
+        "x-provisioning-vendor": "grandstream",
+        "x-provisioning-error": "phone-not-found",
+      },
+    });
   }
 
   const resolved = await getResolvedProvisioningRules(phone);

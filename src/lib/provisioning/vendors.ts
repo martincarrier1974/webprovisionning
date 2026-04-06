@@ -70,11 +70,15 @@ function splitHostPort(value: string | null | undefined): { host: string; port: 
   return { host: raw, port: "5060" };
 }
 
-/** GXP21xx P212 = « Upgrade via » (TFTP/HTTP/HTTPS) — doit correspondre au schéma de P237 (pas le NTP). */
-function grandstreamUpgradeViaCode(baseUrl: string): string {
-  const u = baseUrl.trim().toLowerCase();
-  if (u.startsWith("https:")) return "2";
-  if (u.startsWith("http:")) return "1";
+/**
+ * GXP21xx P212 = « Upgrade via » (téléchargement config / firmware).
+ * Beaucoup de firmwares n’acceptent que 0=TFTP et 1=HTTP ; le HTTPS suit souvent l’URL dans P237 quand P212=1.
+ * Mettre 2 (HTTPS explicite) peut empêcher tout téléchargement sur anciennes versions.
+ * Surcharge : GRANDSTREAM_P212_UPGRADE_VIA=1|2|0
+ */
+function grandstreamUpgradeViaCode(_baseUrl: string): string {
+  const override = (process.env.GRANDSTREAM_P212_UPGRADE_VIA ?? "").trim();
+  if (override && /^\d+$/.test(override)) return override;
   return "1";
 }
 
