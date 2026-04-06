@@ -146,7 +146,12 @@ export function TabKeys({ phone, initialKeys }: Props) {
     setMsg(null);
     try {
       // N'envoyer que les touches pertinentes selon ce qui est activé
-      const activeKeys = vmpkEnabled ? keys : keys.slice(0, physicalCapacity);
+      // Si physicalCapacity est 0/null (modèle sans capacité définie), envoyer toutes les touches configurées
+      const activeKeys = vmpkEnabled
+        ? keys
+        : physicalCapacity > 0
+          ? keys.slice(0, physicalCapacity)
+          : keys.filter(k => k.mode !== "DEFAULT" && k.mode !== "NONE");
       const res = await fetch(`/api/admin/phones/${phone.id}/keys`, {
         method: "POST",
         headers: { "content-type": "application/json" },

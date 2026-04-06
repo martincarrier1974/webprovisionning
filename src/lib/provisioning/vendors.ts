@@ -715,7 +715,14 @@ export function renderProvisioningConfig(
     mergedRules.set(key, value);
   }
 
+  // Clés protégées : les règles PHONE ne peuvent pas écraser les touches programmables
+  // ni le key_mode (qui doit rester AccountMode=1 pour que BLF/SpeedDial fonctionnent)
+  const protectedPrefixes = vendor === "yealink"
+    ? ["linekey.key_mode"]
+    : [];
+
   for (const entry of resolvedEntries) {
+    if (protectedPrefixes.some(p => entry.key === p)) continue;
     mergedRules.set(entry.key, entry.value);
   }
 
@@ -748,7 +755,11 @@ export function renderProvisioningConfig(
       ? ["#!version:1.0.0.1", `## Auto-generated for ${normalizedMac}`, `## Model ${context.phoneModel.displayName}`]
       : ["# Grandstream generated configuration", `# Auto-generated for ${normalizedMac}`, `# Model ${context.phoneModel.displayName}`];
 
-  const body = Array.from(mergedRules.entries()).map(([key, value]) => `${key} = ${formatValue(value)}`);
+  // Yealink : les valeurs linekey.*.label peuvent avoir des espaces mais ne doivent pas être entre guillemets
+  const body = Array.from(mergedRules.entries()).map(([key, value]) => {
+    if (vendor === "yealink" && key.startsWith("linekey.")) return `${key} = ${value}`;
+    return `${key} = ${formatValue(value)}`;
+  });
 
   return [...header, ...body].join("\n");
 }
