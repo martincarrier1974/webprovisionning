@@ -33,6 +33,10 @@ export function TabProvisioning({
 }) {
   const [pushing, setPushing] = useState(false);
   const [pushResult, setPushResult] = useState<{ ok: boolean; text: string } | null>(null);
+  const [rebooting, setRebooting] = useState(false);
+  const [rebootResult, setRebootResult] = useState<{ ok: boolean; text: string } | null>(null);
+  const [syncing, setSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState<{ ok: boolean; text: string } | null>(null);
   const [previewConfig, setPreviewConfig] = useState<string | null>(null);
   const [loadingPreview, setLoadingPreview] = useState(false);
   const [logs, setLogs] = useState<Log[]>(phone.provisionLogs);
@@ -70,6 +74,42 @@ export function TabProvisioning({
       setPreviewConfig("Erreur lors du chargement de la configuration.");
     } finally {
       setLoadingPreview(false);
+    }
+  }
+
+  async function pushConfig() {
+    setSyncing(true);
+    setSyncResult(null);
+    try {
+      const res = await fetch(`/api/admin/phones/${phone.id}/resync`, { method: "POST" });
+      const json = await res.json();
+      if (json.ok) {
+        setSyncResult({ ok: true, text: `✓ Config poussée — ${json.remoteTriggered ? json.remoteMessage : "Config prête, téléphone contacté via " + json.remoteMethod + ". " + json.remoteMessage}` });
+        void refreshLogs();
+      } else {
+        setSyncResult({ ok: false, text: `✗ ${json.error ?? "Erreur"}` });
+      }
+    } catch (e) {
+      setSyncResult({ ok: false, text: `✗ Erreur réseau (${e instanceof Error ? e.message : String(e)})` });
+    } finally {
+      setSyncing(false);
+    }
+  }
+
+  async function rebootDevice() {
+    setRebooting(true);
+    setRebootResult(null);
+    try {
+      const res = await fetch(`/api/admin/phones/${phone.id}/reboot`, { method: "POST" });
+      const json = await res.json();
+      setRebootResult({
+        ok: json.ok,
+        text: json.ok ? `✓ ${json.message}` : `✗ ${json.message ?? json.error ?? "Erreur"}`,
+      });
+    } catch (e) {
+      setRebootResult({ ok: false, text: `✗ Erreur réseau (${e instanceof Error ? e.message : String(e)})` });
+    } finally {
+      setRebooting(false);
     }
   }
 
@@ -135,13 +175,40 @@ export function TabProvisioning({
             </div>
             <div style={{ display: "flex", gap: 10, alignItems: "center", marginLeft: "auto", flexWrap: "wrap" }}>
               <button className="btn btn-ghost btn-sm" onClick={loadPreview} disabled={loadingPreview}>
-                {loadingPreview ? "Chargement..." : "👁 Prévisualiser la config"}
+                {loadingPreview ? "Chargement..." : "👁 Prévisualiser"}
               </button>
-              <button className="btn btn-primary" onClick={testConfig} disabled={pushing}>
-                {pushing ? "Test en cours..." : "▶ Tester"}
+              <button className="btn btn-ghost btn-sm" onClick={testConfig} disabled={pushing}>
+                {pushing ? "Test..." : "▶ Tester"}
+              </button>
+              <button
+                className="btn btn-primary"
+                onClick={pushConfig}
+                disabled={syncing}
+                title="Envoie un SIP NOTIFY check-sync au téléphone (comme GDMS)"
+              >
+                {syncing ? "Push en cours..." : "⬆ Push Config"}
+              </button>
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={rebootDevice}
+                disabled={rebooting}
+                style={{ color: "#f87171", borderColor: "rgba(248,113,113,0.3)" }}
+                title="Envoie un SIP NOTIFY reboot au téléphone"
+              >
+                {rebooting ? "Reboot..." : "↺ Reboot"}
               </button>
             </div>
           </div>
+          {syncResult && (
+            <div style={{ fontSize: 13, padding: "8px 12px", borderRadius: 6, background: syncResult.ok ? "rgba(74,222,128,0.08)" : "rgba(248,113,113,0.08)", color: syncResult.ok ? "#4ade80" : "#f87171" }}>
+              {syncResult.text}
+            </div>
+          )}
+          {rebootResult && (
+            <div style={{ fontSize: 13, padding: "8px 12px", borderRadius: 6, background: rebootResult.ok ? "rgba(74,222,128,0.08)" : "rgba(248,113,113,0.08)", color: rebootResult.ok ? "#4ade80" : "#f87171" }}>
+              {rebootResult.text}
+            </div>
+          )}
           {pushResult && (
             <div style={{ fontSize: 13, padding: "8px 12px", borderRadius: 6, background: pushResult.ok ? "rgba(74,222,128,0.08)" : "rgba(248,113,113,0.08)", color: pushResult.ok ? "#4ade80" : "#f87171" }}>
               {pushResult.text}
