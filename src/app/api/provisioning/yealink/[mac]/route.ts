@@ -14,7 +14,24 @@ export async function GET(
   request: Request,
   context: RouteContext<"/api/provisioning/yealink/[mac]">
 ) {
-  const { mac } = await context.params;
+  const { mac: rawMac } = await context.params;
+
+  // Yealink typically requests y000000000000.cfg (common), then <MAC>.cfg (or other variants)
+  // Example requests: y000000000000.cfg, 805EC0EA1251.cfg, 805EC0EA1251, 80:5E:C0:EA:12:51.cfg
+  const lowered = rawMac.toLowerCase();
+  const isCommonConfig = lowered === "y000000000000.cfg" || lowered === "y000000000000";
+
+  if (isCommonConfig) {
+    // Return a harmless 200 so the phone continues its provisioning sequence.
+    return new NextResponse("# common yealink config\n", {
+      status: 200,
+      headers: { "content-type": "text/plain; charset=utf-8", "x-provisioning-vendor": "yealink" },
+    });
+  }
+
+  const mac = rawMac
+    .replace(/\.(cfg|txt)$/i, "")
+    .replace(/[^a-fA-F0-9]/g, "");
 
   if (!isValidMac(mac)) {
     return NextResponse.json({ ok: false, error: "Invalid MAC address" }, { status: 400 });
