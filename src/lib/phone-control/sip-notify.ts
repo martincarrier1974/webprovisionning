@@ -188,7 +188,7 @@ export async function sendSipNotify(opts: SipNotifyOptions): Promise<SipNotifyRe
     phoneIp,
     sipServer,
     sipUsername,
-    sipPassword: _sipPassword,
+    sipPassword,
     event,
     timeoutMs = 5000,
   } = opts;
