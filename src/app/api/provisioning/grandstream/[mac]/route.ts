@@ -2,14 +2,21 @@ import { NextResponse } from "next/server";
 
 import { db } from "@/lib/db";
 import { getProvisioningContextByMac, getResolvedProvisioningRules } from "@/lib/provisioning/rules";
-import {
-  isValidMac,
-  normalizeMac,
-  prismaVendorToSupportedVendor,
-  renderProvisioningConfig,
-  renderGrandstreamXml,
-} from "@/lib/provisioning/vendors";
+import { isValidMac, normalizeMac, renderGrandstreamXml } from "@/lib/provisioning/vendors";
 import { sendWebhook } from "@/lib/webhooks/notify";
+
+function emptyGrandstreamProvisionXml(comment: string) {
+  const content = `<?xml version="1.0" encoding="UTF-8" ?>
+<gs_provision version="1">
+<config version="1">
+<!-- ${comment} -->
+</config>
+</gs_provision>`;
+  return new NextResponse(content, {
+    status: 200,
+    headers: { "content-type": "application/xml; charset=utf-8", "x-provisioning-vendor": "grandstream" },
+  });
+}
 
 export async function GET(
   request: Request,
@@ -17,14 +24,22 @@ export async function GET(
 ) {
   const { mac: rawMac } = await context.params;
 
+  // Grandstream requests cfg.xml, then cfgGXP<model>.xml (any model), then cfg<MAC>.xml
+  if (/^cfgGXP\d+\.xml$/i.test(rawMac)) {
+    return emptyGrandstreamProvisionXml(`model stub ${rawMac}`);
+  }
+
   // Grandstream requests: cfg<MAC>.xml, cfg<MAC>, <MAC>.xml or bare <MAC>
-  const isXmlRequest = /\.(xml|cfg)$/i.test(rawMac);
   const mac = rawMac
     .replace(/^cfg/i, "")
     .replace(/\.(xml|cfg|txt)$/i, "")
     .replace(/[^a-fA-F0-9]/g, "");
 
   if (!isValidMac(mac)) {
+    // Other model-specific files (non-MAC) — return empty XML so the phone continues to cfg<MAC>.xml
+    if (/^cfg/i.test(rawMac) && /\.xml$/i.test(rawMac)) {
+      return emptyGrandstreamProvisionXml(`non-mac stub ${rawMac}`);
+    }
     return NextResponse.json({ ok: false, error: "Invalid MAC address" }, { status: 400 });
   }
 
@@ -48,15 +63,8 @@ export async function GET(
 
   const resolved = await getResolvedProvisioningRules(phone);
 
-  // GXP phones request cfg<MAC>.xml — return XML format; bare MAC = text/plain (preview)
-  const useXml = isXmlRequest;
-  const content = useXml
-    ? renderGrandstreamXml(phone, resolved.resolvedEntries)
-    : renderProvisioningConfig(
-        prismaVendorToSupportedVendor(phone.phoneModel.vendor),
-        phone,
-        resolved.resolvedEntries
-      );
+  // GXP always expects XML for downloaded provision files (some firmware omit the .xml suffix in the path)
+  const content = renderGrandstreamXml(phone, resolved.resolvedEntries);
 
   await db.phone.update({
     where: { id: phone.id },
@@ -84,7 +92,7 @@ export async function GET(
   return new NextResponse(content, {
     status: 200,
     headers: {
-      "content-type": useXml ? "application/xml; charset=utf-8" : "text/plain; charset=utf-8",
+      "content-type": "application/xml; charset=utf-8",
       "x-provisioning-vendor": "grandstream",
       "x-device-mac": normalizedMac,
       "x-provisioning-rules": String(resolved.resolvedEntries.length),
