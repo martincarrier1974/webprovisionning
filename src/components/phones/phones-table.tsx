@@ -75,7 +75,11 @@ export function PhonesTable({ phones }: { phones: Phone[] }) {
   }
 
   async function runBulk(action: "config" | "firmware") {
-    if (selected.size === 0) return;
+    if (selected.size === 0) {
+      setShowResults(true);
+      setResults([{ id: "", ok: false, error: "Sélectionnez au moins un téléphone (case à cocher)." }]);
+      return;
+    }
     setRunning(action);
     setResults([]);
     setShowResults(true);
@@ -173,10 +177,10 @@ export function PhonesTable({ phones }: { phones: Phone[] }) {
             )}
           </div>
           <div style={{ maxHeight: 180, overflowY: "auto" }}>
-            {results.map(r => {
-              const p = phoneMap[r.id];
+            {results.map((r, i) => {
+              const p = r.id ? phoneMap[r.id] : undefined;
               return (
-                <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 16px", borderBottom: "1px solid #1a1a1a", fontSize: 13 }}>
+                <div key={r.id || `hint-${i}`} style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 16px", borderBottom: "1px solid #1a1a1a", fontSize: 13 }}>
                   <span style={{ fontFamily: "monospace", fontSize: 12, color: "var(--muted)", minWidth: 140 }}>{p?.macAddress ?? r.id}</span>
                   <span style={{ flex: 1 }}>{p?.label ?? "—"}</span>
                   {r.ok

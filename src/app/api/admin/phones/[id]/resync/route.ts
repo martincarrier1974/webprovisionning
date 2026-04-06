@@ -3,7 +3,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth/dal";
 import { db } from "@/lib/db";
 import { getProvisioningContextByMac, getResolvedProvisioningRules } from "@/lib/provisioning/rules";
-import { isValidMac, prismaVendorToSupportedVendor, renderProvisioningConfig } from "@/lib/provisioning/vendors";
+import {
+  isValidMac,
+  prismaVendorToSupportedVendor,
+  renderGrandstreamXml,
+  renderProvisioningConfig,
+} from "@/lib/provisioning/vendors";
 
 export async function POST(
   _request: NextRequest,
@@ -21,11 +26,11 @@ export async function POST(
   if (!phone) return NextResponse.json({ ok: false, error: "Contexte introuvable." }, { status: 404 });
 
   const resolved = await getResolvedProvisioningRules(phone);
-  const config = renderProvisioningConfig(
-    prismaVendorToSupportedVendor(phone.phoneModel.vendor),
-    phone,
-    resolved.resolvedEntries
-  );
+  const vendor = prismaVendorToSupportedVendor(phone.phoneModel.vendor);
+  const config =
+    vendor === "grandstream"
+      ? renderGrandstreamXml(phone, resolved.resolvedEntries)
+      : renderProvisioningConfig(vendor, phone, resolved.resolvedEntries);
 
   await db.phone.update({ where: { id }, data: { lastProvisionedAt: new Date() } });
 

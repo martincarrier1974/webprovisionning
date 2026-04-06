@@ -108,11 +108,15 @@ export function TabSystem({ phone }: { phone: Phone }) {
 
       // Rules
       const mappedRules = buildRules(rules, isYealink);
-      await fetch(`/api/admin/phones/${phone.id}/rules`, {
+      const rulesRes = await fetch(`/api/admin/phones/${phone.id}/rules`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ rules: mappedRules }),
       });
+      const rulesJson = (await rulesRes.json()) as { ok?: boolean; error?: string };
+      if (!rulesRes.ok || !rulesJson.ok) {
+        throw new Error(rulesJson.error ?? `Règles : erreur ${rulesRes.status}`);
+      }
 
       setMsg({ ok: true, text: "Sauvegardé & appliqué." });
     } catch (e: unknown) {
@@ -286,6 +290,8 @@ function buildRules(rules: Rules, isYealink: boolean): { key: string; value: str
 
   return Object.entries(rules)
     .filter(([k]) => map[k])
+    // Grandstream : ne pas mapper le serveur NTP sur P212 (P212 = « Upgrade via », pas NTP).
+    .filter(([k]) => isYealink || k !== "ntp_server")
     .map(([k, v]) => ({
       key: isYealink ? map[k].y : map[k].g,
       value: k === "language" && isYealink ? (v === "fr" ? "French" : "English") : v,
