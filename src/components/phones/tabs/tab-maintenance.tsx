@@ -223,14 +223,15 @@ export function TabMaintenance({ phone }: { phone: Phone }) {
 
 function buildRules(rules: Rules, isYealink: boolean): { key: string; value: string }[] {
   const map: Record<string, { y: string; g: string }> = {
-    auto_provision:           { y: "auto_provision.repeat.enable",       g: "P145" },
-    provision_mode:           { y: "auto_provision.check.new_config",    g: "P144" },
-    provision_interval:       { y: "auto_provision.repeat.minutes",      g: "P146" },
-    provision_day:            { y: "auto_provision.check.weekday",        g: "P147" },
-    provision_hour:           { y: "auto_provision.check.time",          g: "P148" },
-    allow_dhcp_option_66:     { y: "auto_provision.dhcp_option.enable",  g: "P149" },
-    sip_notify_auth:          { y: "auto_provision.notify.enable",       g: "P150" },
-    firmware_upgrade:         { y: "auto_provision.firmware.enable",     g: "P145" },
+    // Grandstream P-codes ref: GXP21xx Admin Guide
+    auto_provision:           { y: "auto_provision.repeat.enable",       g: "P214" },  // 1=enable periodic check
+    provision_mode:           { y: "auto_provision.check.new_config",    g: "P144" },  // 0=no 1=always 2=on reboot
+    provision_interval:       { y: "auto_provision.repeat.minutes",      g: "P146" },  // interval in minutes
+    provision_day:            { y: "auto_provision.check.weekday",       g: "P147" },  // 0=Sun…6=Sat
+    provision_hour:           { y: "auto_provision.check.time",          g: "P148" },  // hour 0-23
+    allow_dhcp_option_66:     { y: "auto_provision.dhcp_option.enable",  g: "P145" },  // 0=ignore DHCP 43/66
+    sip_notify_auth:          { y: "auto_provision.notify.enable",       g: "P1375" }, // SIP NOTIFY auth
+    firmware_upgrade:         { y: "auto_provision.firmware.enable",     g: "P194" },  // 0=no 1=check interval 3=always
     firmware_upgrade_interval:{ y: "auto_provision.firmware.interval",   g: "P151" },
     firmware_upgrade_day:     { y: "auto_provision.firmware.weekday",    g: "P152" },
     firmware_upgrade_hour:    { y: "auto_provision.firmware.time",       g: "P153" },

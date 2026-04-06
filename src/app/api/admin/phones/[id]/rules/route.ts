@@ -14,21 +14,25 @@ export async function POST(
   const phone = await db.phone.findUnique({ where: { id } });
   if (!phone) return NextResponse.json({ ok: false, error: "Téléphone introuvable." }, { status: 404 });
 
-  for (const rule of rules) {
-    if (!rule.key) continue;
-    await db.provisioningRule.upsert({
-      where: {
-        // use a composite workaround — find first then upsert
-        id: (await db.provisioningRule.findFirst({ where: { phoneId: id, key: rule.key, source: "PHONE" } }))?.id ?? "new",
-      },
-      create: {
-        source: "PHONE",
+  // Upsert propre : deleteMany + createMany pour éviter les doublons
+  // (Prisma n'a pas d'index composite unique sur source+phoneId+key dans ce schéma)
+  const keys = rules.map(r => r.key).filter(Boolean);
+  if (keys.length > 0) {
+    await db.provisioningRule.deleteMany({
+      where: { phoneId: id, source: "PHONE", key: { in: keys } },
+    });
+  }
+
+  const toCreate = rules.filter(r => r.key && r.value !== "");
+  if (toCreate.length > 0) {
+    await db.provisioningRule.createMany({
+      data: toCreate.map((rule, i) => ({
+        source: "PHONE" as const,
         phoneId: id,
         key: rule.key,
         value: rule.value,
-        sortOrder: 100,
-      },
-      update: { value: rule.value },
+        sortOrder: 100 + i,
+      })),
     });
   }
 

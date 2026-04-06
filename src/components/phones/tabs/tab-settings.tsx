@@ -87,8 +87,8 @@ export function TabSettings({ phone }: { phone: Phone }) {
     ntp_interval: "1440",
     show_date_on_statusbar: "0",
     headset_key_mode: "DefaultMode",
-    // Programmable Keys globals
-    key_mode: "0",
+    // Programmable Keys globals — AccountMode (1) requis pour BLF/SpeedDial
+    key_mode: "1",
     show_keys_label: "1",
     show_label_background: "0",
     use_long_label: "0",
