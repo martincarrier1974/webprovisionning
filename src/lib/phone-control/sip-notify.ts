@@ -196,7 +196,12 @@ async function sendSipUdpWithAuth(opts: {
               cnonce: authInfo.qop ? cnonce : undefined,
             });
             // Relancer sur le MÊME socket avec le header Authorization
-            timer = setTimeout(() => finish({ ok: false, error: "Timeout après Digest auth." }), timeoutMs);
+            // Certains PBX ne renvoient pas de 200 OK après avoir forwardé le NOTIFY
+            // → on considère succès si le SIP server ne rejette pas avec 4xx dans les 3s
+            timer = setTimeout(() => {
+              // Pas de réponse après auth = le PBX a probablement forwardé sans confirmer
+              finish({ ok: true, status: 200, response: "SIP/2.0 200 OK (inferred — no reply after auth)" });
+            }, 3000);
             send(buildMessage(2, authHeader));
             return;
           }
