@@ -29,6 +29,11 @@ export function getProvisioningBaseUrl() {
   return appUrl.length > 0 ? appUrl.replace(/\/$/, "") : "http://localhost:3000";
 }
 
+export function getFirmwareBaseUrl() {
+  const firmwareBaseUrl = (process.env.FIRMWARE_BASE_URL ?? "").trim();
+  return firmwareBaseUrl.length > 0 ? firmwareBaseUrl.replace(/\/$/, "") : null;
+}
+
 function formatValue(value: string) {
   if (value === "") return '""';
   if (/\s/.test(value) || value.includes(",") || value.includes(";")) {
@@ -115,6 +120,7 @@ function normalizeYealinkSipServerAddresses(mergedRules: Map<string, string>) {
 function buildBaseEntries(vendor: SupportedVendor, context: PhoneProvisioningContext) {
   const baseUrl = getProvisioningBaseUrl();
   const timezone = context.site?.timezone || context.client.timezone || "America/Toronto";
+  const firmwareBaseUrl = getFirmwareBaseUrl();
   const firmwareUrl = context.firmwareTarget
     ? `${baseUrl}/api/firmware/${context.firmwareTarget.storageKey}`
     : null;
@@ -255,7 +261,7 @@ function buildBaseEntries(vendor: SupportedVendor, context: PhoneProvisioningCon
       ["ldap.call_in_lookup", "0"],
       ["ldap.call_out_lookup", "0"],
 
-      ...(firmwareUrl ? [["auto_provision.firmware.url", firmwareUrl]] : []),
+      ...(firmwareBaseUrl ? [["auto_provision.firmware.url", firmwareBaseUrl]] : firmwareUrl ? [["auto_provision.firmware.url", firmwareUrl]] : []),
     ] as Array<[string, string]>;
   }
 
@@ -269,7 +275,7 @@ function buildBaseEntries(vendor: SupportedVendor, context: PhoneProvisioningCon
     ["P35", context.sipUsername || ""],           // SIP User ID
     ["P34", context.sipPassword || ""],           // Authenticate Password
     ["P36", context.sipUsername || ""],           // Authenticate ID
-    ["P192", firmwareUrl ?? ""],                  // Firmware Server Path (pas le SIP ; vide si pas de firmware)
+    ["P192", firmwareBaseUrl || firmwareUrl || ""], // Firmware Server Path (priorité à FIRMWARE_BASE_URL, sinon API, sinon vide)
     ["P2", context.adminPassword || "admin"],     // Admin password
     // Provisioning
     ["P237", `${baseUrl}/api/provisioning/grandstream/`], // Config server base path (phone appends cfgMAC.xml)
@@ -430,13 +436,14 @@ function buildBaseEntries(vendor: SupportedVendor, context: PhoneProvisioningCon
     ["P1464", "**"], // BLF call-pickup prefix
 
     // ── Firmware ──────────────────────────────────────────────────────────
-    ...(firmwareUrl ? [["P232", firmwareUrl]] : []),
+    ...(firmwareBaseUrl ? [["P232", firmwareBaseUrl]] : firmwareUrl ? [["P232", firmwareUrl]] : []),
   ] as Array<[string, string]>;
 }
 
 function buildSnomBaseEntries(context: PhoneProvisioningContext): Record<string, string> {
   const timezone = context.site?.timezone || context.client.timezone || "America/Toronto";
   const baseUrl = getProvisioningBaseUrl();
+  const firmwareBaseUrl = getFirmwareBaseUrl();
   const firmwareUrl = context.firmwareTarget
     ? `${baseUrl}/api/firmware/${context.firmwareTarget.storageKey}`
     : null;
@@ -505,7 +512,7 @@ function buildSnomBaseEntries(context: PhoneProvisioningContext): Record<string,
     "update_policy":   "1",     // 1=Check on registration
 
     // ── Firmware ──────────────────────────────────────────────────────
-    ...(firmwareUrl ? { "firmware_status": firmwareUrl } : {}),
+    ...(firmwareBaseUrl ? { "firmware_status": firmwareBaseUrl } : firmwareUrl ? { "firmware_status": firmwareUrl } : {}),
 
     // ── Web UI ────────────────────────────────────────────────────────
     "http_user":       "user",
