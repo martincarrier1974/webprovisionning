@@ -121,8 +121,13 @@ function buildBaseEntries(vendor: SupportedVendor, context: PhoneProvisioningCon
   const baseUrl = getProvisioningBaseUrl();
   const timezone = context.site?.timezone || context.client.timezone || "America/Toronto";
   const firmwareBaseUrl = getFirmwareBaseUrl();
+  // URL directe vers le fichier firmware assigné au téléphone (si aucun FIRMWARE_BASE_URL n'est défini)
   const firmwareUrl = context.firmwareTarget
     ? `${baseUrl}/api/firmware/${context.firmwareTarget.storageKey}`
+    : null;
+  // URL de dossier virtuel par modèle — Grandstream P192 attend un répertoire de base
+  const firmwareFolderUrl = context.firmwareTarget
+    ? `${baseUrl}/api/firmware/${context.phoneModel.vendor.toLowerCase()}/${context.phoneModel.modelCode.toUpperCase()}/`
     : null;
 
   if (vendor === "yealink") {
@@ -275,7 +280,7 @@ function buildBaseEntries(vendor: SupportedVendor, context: PhoneProvisioningCon
     ["P35", context.sipUsername || ""],           // SIP User ID
     ["P34", context.sipPassword || ""],           // Authenticate Password
     ["P36", context.sipUsername || ""],           // Authenticate ID
-    ["P192", firmwareBaseUrl || firmwareUrl || ""], // Firmware Server Path (priorité à FIRMWARE_BASE_URL, sinon API, sinon vide)
+    ["P192", firmwareBaseUrl || firmwareFolderUrl || ""], // Firmware Server Path — doit être un répertoire (le téléphone ajoute le nom du fichier)
     ["P2", context.adminPassword || "admin"],     // Admin password
     // Provisioning
     ["P237", `${baseUrl}/api/provisioning/grandstream/`], // Config server base path (phone appends cfgMAC.xml)
@@ -435,8 +440,7 @@ function buildBaseEntries(vendor: SupportedVendor, context: PhoneProvisioningCon
     ["P1371", "0"],  // Show Target Softkey
     ["P1464", "**"], // BLF call-pickup prefix
 
-    // ── Firmware ──────────────────────────────────────────────────────────
-    ...(firmwareBaseUrl ? [["P232", firmwareBaseUrl]] : firmwareUrl ? [["P232", firmwareUrl]] : []),
+    // P192 ci-dessus gère déjà le firmware — P232 retiré (doublon)
   ] as Array<[string, string]>;
 }
 

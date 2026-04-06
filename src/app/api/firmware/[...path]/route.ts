@@ -18,6 +18,53 @@ export async function GET(
   const pathSegments = params.path;
   const key = pathSegments.join("/");
 
+  // Si le chemin a exactement trois segments (vendor/modelCode/filename), servir le fichier par originalName
+  if (pathSegments.length === 3) {
+    const [vendorStr, modelCode, filename] = pathSegments;
+    const vendor = VENDOR_MAP[vendorStr.toLowerCase()];
+
+    if (vendor) {
+      const phoneModel = await db.phoneModel.findFirst({
+        where: { vendor, modelCode: modelCode.toUpperCase() },
+        select: { id: true },
+      });
+
+      if (phoneModel) {
+        const fw = await db.firmware.findFirst({
+          where: {
+            phoneModelId: phoneModel.id,
+            originalName: filename,
+            status: "ACTIVE",
+          },
+          select: { fileData: true, originalName: true, storageKey: true },
+          orderBy: { createdAt: "desc" },
+        });
+
+        if (fw?.fileData) {
+          const body = Buffer.isBuffer(fw.fileData) ? fw.fileData : Buffer.from(fw.fileData);
+          return new NextResponse(body, {
+            status: 200,
+            headers: {
+              "content-type": "application/octet-stream",
+              "content-disposition": `attachment; filename="${encodeURIComponent(fw.originalName)}"`,
+              "cache-control": "private, max-age=3600",
+            },
+          });
+        }
+
+        if (fw?.storageKey && isObjectStorageConfigured()) {
+          const publicUrl = buildPublicObjectUrl(fw.storageKey);
+          if (publicUrl) return NextResponse.redirect(publicUrl, 307);
+        }
+      }
+    }
+
+    return NextResponse.json(
+      { ok: false, error: "Firmware introuvable." },
+      { status: 404 }
+    );
+  }
+
   // Si le chemin a exactement deux segments, interpréter comme vendor/modelCode et lister les firmwares
   if (pathSegments.length === 2) {
     const [vendorStr, modelCode] = pathSegments;
