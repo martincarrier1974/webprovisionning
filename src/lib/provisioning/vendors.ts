@@ -41,6 +41,20 @@ function yesNo(value: boolean) {
   return value ? "1" : "0";
 }
 
+function splitHostPort(value: string | null | undefined): { host: string; port: string } {
+  const raw = (value ?? "").trim();
+  if (raw.length === 0) return { host: "", port: "5060" };
+
+  // If user entered host:port, keep host only and move port to the dedicated field.
+  // Yealink UI has separate "Server Host" and "Port" inputs; providing host:port can misapply.
+  const m = raw.match(/^(.*):(\d{2,5})$/);
+  if (!m) return { host: raw, port: "5060" };
+
+  const host = m[1]?.trim() ?? "";
+  const port = m[2] ?? "5060";
+  return { host, port };
+}
+
 function buildBaseEntries(vendor: SupportedVendor, context: PhoneProvisioningContext) {
   const baseUrl = getProvisioningBaseUrl();
   const timezone = context.site?.timezone || context.client.timezone || "America/Toronto";
@@ -49,6 +63,7 @@ function buildBaseEntries(vendor: SupportedVendor, context: PhoneProvisioningCon
     : null;
 
   if (vendor === "yealink") {
+    const sipServer = splitHostPort(context.sipServer);
     return [
       // ── Account / SIP ─────────────────────────────────────────────────
       ["account.1.enable", context.sipUsername ? "1" : "0"],
@@ -57,8 +72,8 @@ function buildBaseEntries(vendor: SupportedVendor, context: PhoneProvisioningCon
       ["account.1.user_name", context.sipUsername || ""],
       ["account.1.auth_name", context.sipUsername || ""],
       ["account.1.password", context.sipPassword || ""],
-      ["account.1.sip_server.1.address", context.sipServer || ""],
-      ["account.1.sip_server.1.port", "5060"],
+      ["account.1.sip_server.1.address", sipServer.host],
+      ["account.1.sip_server.1.port", sipServer.port],
       ["account.1.sip_server.1.transport_type", "0"],  // 0=UDP
       ["account.1.sip_server.1.expires", "60"],
       ["account.1.sip_server.1.retry_counts", "3"],
