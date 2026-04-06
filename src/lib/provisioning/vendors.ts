@@ -70,6 +70,20 @@ function splitHostPort(value: string | null | undefined): { host: string; port: 
   return { host: raw, port: "5060" };
 }
 
+/** GXP21xx P212 = « Upgrade via » (TFTP/HTTP/HTTPS) — doit correspondre au schéma de P237 (pas le NTP). */
+function grandstreamUpgradeViaCode(baseUrl: string): string {
+  const u = baseUrl.trim().toLowerCase();
+  if (u.startsWith("https:")) return "2";
+  if (u.startsWith("http:")) return "1";
+  return "1";
+}
+
+function formatGrandstreamPrimarySipServer(sipServer: string | null | undefined): string {
+  const split = splitHostPort(sipServer);
+  if (!split.host) return "";
+  return split.port !== "5060" ? `${split.host}:${split.port}` : split.host;
+}
+
 /** After merging rules, split any account.*.sip_server.*.address that still contains :port */
 function normalizeYealinkSipServerAddresses(mergedRules: Map<string, string>) {
   const addressKeyRe = /^account\.(\d+)\.sip_server\.(\d+)\.address$/;
@@ -232,21 +246,24 @@ function buildBaseEntries(vendor: SupportedVendor, context: PhoneProvisioningCon
     ] as Array<[string, string]>;
   }
 
+  const sip1 = formatGrandstreamPrimarySipServer(context.sipServer);
+
   return [
-    // Account / SIP
+    // Account / SIP (GXP21xx: P47 = serveur SIP, P35 = User ID, P34 = mot de passe, P36 = Auth ID)
     ["P271", context.sipUsername ? "1" : "0"],   // Account active
     ["P270", context.label || context.extensionNumber || context.client.name], // Display name
-    ["P47", context.sipUsername || ""],           // SIP User ID
-    ["P34", context.sipUsername || ""],           // Auth ID
-    ["P35", context.sipPassword || ""],           // SIP Password
-    ["P192", context.sipServer || ""],            // SIP Server
+    ["P47", sip1],                                // Primary SIP Server (hôte ou hôte:port)
+    ["P35", context.sipUsername || ""],           // SIP User ID
+    ["P34", context.sipPassword || ""],           // Authenticate Password
+    ["P36", context.sipUsername || ""],           // Authenticate ID
+    ["P192", firmwareUrl ?? ""],                  // Firmware Server Path (pas le SIP ; vide si pas de firmware)
     ["P2", context.adminPassword || "admin"],     // Admin password
     // Provisioning
     ["P237", `${baseUrl}/api/provisioning/grandstream/`], // Config server base path (phone appends cfgMAC.xml)
-    ["P145", "3"],                                // Firmware upgrade: always check
+    ["P212", grandstreamUpgradeViaCode(baseUrl)], // 1=HTTP 2=HTTPS — requis pour télécharger cfg depuis P237
+    ["P145", "0"],                                // Ne pas laisser DHCP Option 43/66 écraser l’URL de provision
     // ── NTP / Time / Language ─────────────────────────────────────────────
-    ["P212", "pool.ntp.org"],                     // NTP server
-    ["P213", "1440"],                             // NTP Update Interval (min)
+    ["P213", "1440"],                             // Intervalle sync (min) — selon firmware
     ["P64", "-5"],                                // Timezone offset (EST)
     ["P75", "0"],    // Allow DHCP Option 2 override timezone: No
     ["P246", yesNo(Boolean(context.sipUsername))],
@@ -386,10 +403,6 @@ function buildBaseEntries(vendor: SupportedVendor, context: PhoneProvisioningCon
     // ── PC port ───────────────────────────────────────────────────────────
     ["P329", "1"],   // Enable PC port
 
-    // ── Preferences ──────────────────────────────────────────────────────
-    ["P213", "1440"],// NTP Update Interval (min)
-    ["P1305", "0"],  // Show Date On Status Bar
-
     // ── Programmable keys globals ─────────────────────────────────────────
     ["P1362", "0"],  // Key mode: 0=LineMode, 1=AccountMode
     ["P1363", "1"],  // Show keys label
@@ -524,14 +537,8 @@ function buildSipAccountEntries(vendor: SupportedVendor, context: PhoneProvision
       entries.push([`account.${i}.sip_server.1.address`, accSip.host]);
       entries.push([`account.${i}.sip_server.1.port`, accSip.port]);
     } else if (vendor === "grandstream") {
-      // Grandstream: account 2 starts at P272 offsets (P272-P279 for account 2, etc.)
-      // Each account block is offset by 100 from account 1 (P47=username, P47+100*(i-1))
-      const offset = (i - 1) * 100;
-      entries.push([`P${47 + offset}`, acc.sipUsername || ""]);       // SIP User ID
-      entries.push([`P${34 + offset}`, acc.sipPassword || ""]);       // SIP Auth Password
-      entries.push([`P${2 + offset}`, acc.sipServer || ""]);          // SIP Server
-      entries.push([`P${270 + offset}`, acc.displayName || acc.label || ""]); // Display Name
-      entries.push([`P${35 + offset}`, "1"]);                         // Account Active
+      // Comptes 2+ : décalages P à documenter par modèle ; l’ancien offset écrasait P102 etc.
+      continue;
     } else if (vendor === "snom") {
       entries.push([`user_name${i}`, acc.sipUsername || ""]);
       entries.push([`user_pass${i}`, acc.sipPassword || ""]);
