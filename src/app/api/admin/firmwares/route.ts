@@ -7,6 +7,7 @@ export async function GET() {
   await requireAdmin();
 
   const firmwares = await db.firmware.findMany({
+    omit: { fileData: true },
     orderBy: [{ phoneModel: { vendor: "asc" } }, { phoneModel: { displayName: "asc" } }, { version: "desc" }],
     include: {
       phoneModel: {

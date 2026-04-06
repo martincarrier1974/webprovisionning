@@ -12,6 +12,7 @@ export default async function FirmwaresPage() {
       select: { id: true, vendor: true, modelCode: true, displayName: true },
     }),
     db.firmware.findMany({
+      omit: { fileData: true },
       orderBy: [{ phoneModel: { vendor: "asc" } }, { phoneModel: { displayName: "asc" } }, { version: "desc" }],
       include: {
         phoneModel: { select: { id: true, vendor: true, modelCode: true, displayName: true } },

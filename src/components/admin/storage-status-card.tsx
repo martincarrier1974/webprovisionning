@@ -21,8 +21,8 @@ export function StorageStatusCard({ storage }: Props) {
       <h2 style={{ fontSize: 24, marginBottom: 8 }}>État du stockage firmware</h2>
       <p style={{ color: "#cbd5e1", lineHeight: 1.7, marginBottom: 12 }}>
         {storage.configured
-          ? "Le stockage objet est configuré et prêt à servir les firmwares."
-          : "Le stockage objet n’est pas encore configuré. Les firmwares restent déclaratifs pour l’instant."}
+          ? "Le stockage objet (S3) est configuré : les fichiers sont envoyés sur le bucket et les téléphones sont redirigés vers l’URL publique."
+          : "Sans S3, les fichiers uploadés sont stockés en base PostgreSQL (BYTEA) et servis par /api/firmware/… — adapté à Railway sans disque persistant."}
       </p>
       <div style={{ display: "grid", gap: 8, color: "#e2e8f0" }}>
         <div>Provider: {storage.provider ?? "—"}</div>

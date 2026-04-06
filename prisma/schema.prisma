@@ -200,6 +200,8 @@ model Firmware {
   phoneModel     PhoneModel     @relation(fields: [phoneModelId], references: [id], onDelete: Cascade)
   version        String
   storageKey     String
+  /// Binaire (BYTEA) si pas de S3 : servi via GET /api/firmware/...
+  fileData       Bytes?
   originalName   String
   fileSizeBytes  BigInt?
   checksumSha256 String?
@@ -213,6 +215,7 @@ model Firmware {
 
   @@unique([phoneModelId, version])
   @@index([phoneModelId, status])
+  @@index([storageKey])
 }
 
 model ProvisionLog {

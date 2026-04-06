@@ -107,7 +107,7 @@ function buildBaseEntries(vendor: SupportedVendor, context: PhoneProvisioningCon
   const baseUrl = getProvisioningBaseUrl();
   const timezone = context.site?.timezone || context.client.timezone || "America/Toronto";
   const firmwareUrl = context.firmwareTarget
-    ? `${baseUrl}/firmware/${context.firmwareTarget.storageKey}`
+    ? `${baseUrl}/api/firmware/${context.firmwareTarget.storageKey}`
     : null;
 
   if (vendor === "yealink") {
@@ -429,7 +429,7 @@ function buildSnomBaseEntries(context: PhoneProvisioningContext): Record<string,
   const timezone = context.site?.timezone || context.client.timezone || "America/Toronto";
   const baseUrl = getProvisioningBaseUrl();
   const firmwareUrl = context.firmwareTarget
-    ? `${baseUrl}/firmware/${context.firmwareTarget.storageKey}`
+    ? `${baseUrl}/api/firmware/${context.firmwareTarget.storageKey}`
     : null;
 
   const entries: Record<string, string> = {
