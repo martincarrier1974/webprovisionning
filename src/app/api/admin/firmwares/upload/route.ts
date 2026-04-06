@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { requireAdmin } from "@/lib/auth/dal";
 import { db } from "@/lib/db";
+import { firmwareForJsonResponse } from "@/lib/firmware-json";
 import { isObjectStorageConfigured, uploadToS3 } from "@/lib/storage/object-storage";
 
 /** Fichiers volumineux (hébergeurs type Railway / Vercel : ajuster la limite si besoin). */
@@ -12,6 +13,7 @@ export const maxDuration = 300;
 export async function POST(request: NextRequest) {
   await requireAdmin();
 
+  try {
   const formData = await request.formData();
   const file = formData.get("file") as File | null;
   const phoneModelId = formData.get("phoneModelId") as string;
@@ -59,7 +61,7 @@ export async function POST(request: NextRequest) {
       },
       select: firmwareJsonSelect,
     });
-    return NextResponse.json({ ok: true, firmware });
+    return NextResponse.json({ ok: true, firmware: firmwareForJsonResponse(firmware) });
   }
 
   // Sans S3 (ex. Railway) : stocker le binaire en PostgreSQL (BYTEA)
@@ -79,7 +81,12 @@ export async function POST(request: NextRequest) {
     select: firmwareJsonSelect,
   });
 
-  return NextResponse.json({ ok: true, firmware });
+  return NextResponse.json({ ok: true, firmware: firmwareForJsonResponse(firmware) });
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error("[firmware upload]", e);
+    return NextResponse.json({ ok: false, error: msg || "Erreur serveur." }, { status: 500 });
+  }
 }
 
 const firmwareJsonSelect = {

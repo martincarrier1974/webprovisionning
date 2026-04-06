@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { requireAdmin } from "@/lib/auth/dal";
 import { db } from "@/lib/db";
+import { firmwareForJsonResponse } from "@/lib/firmware-json";
 
 export async function GET() {
   await requireAdmin();
@@ -26,5 +27,8 @@ export async function GET() {
     },
   });
 
-  return NextResponse.json({ ok: true, data: firmwares });
+  return NextResponse.json({
+    ok: true,
+    data: firmwares.map(f => firmwareForJsonResponse(f)),
+  });
 }

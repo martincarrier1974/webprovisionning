@@ -45,8 +45,20 @@ export function FirmwareUploadForm({ phoneModels, onSuccess }: { phoneModels: Mo
         const xhr = new XMLHttpRequest();
         xhr.upload.onprogress = e => { if (e.lengthComputable) setProgress(Math.round(e.loaded / e.total * 100)); };
         xhr.onload = () => {
-          try { resolve(JSON.parse(xhr.responseText)); }
-          catch { resolve({ ok: false, error: "Réponse invalide." }); }
+          const text = xhr.responseText;
+          try {
+            resolve(JSON.parse(text) as { ok: boolean; error?: string });
+          } catch {
+            const plain = text.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 280);
+            const hint =
+              xhr.status === 413 || /payload|too large|body/i.test(plain)
+                ? " Le fichier dépasse souvent la limite du proxy (essayez un fichier plus petit ou augmentez la limite côté hébergeur)."
+                : "";
+            resolve({
+              ok: false,
+              error: `Réponse non-JSON (HTTP ${xhr.status}).${hint}${plain ? ` — ${plain}` : ""}`,
+            });
+          }
         };
         xhr.onerror = () => reject(new Error("Erreur réseau."));
         xhr.open("POST", "/api/admin/firmwares/upload");
