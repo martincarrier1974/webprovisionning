@@ -21,7 +21,7 @@ type Phone = {
   firmwareTarget: { id: string; version: string } | null;
 };
 
-type BulkResult = { id: string; ok: boolean; error?: string };
+type BulkResult = { id: string; ok: boolean; error?: string; message?: string };
 
 export function PhonesTable({ phones }: { phones: Phone[] }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -93,7 +93,9 @@ export function PhonesTable({ phones }: { phones: Phone[] }) {
       try {
         const r = await fetch(`/api/admin/phones/${id}/${endpoint}`, { method: "POST" });
         const json = await r.json();
-        res.push({ id, ok: json.ok, error: json.error });
+        // Pour resync, afficher le message SIP NOTIFY
+        const detail = action === "config" && json.remoteMessage ? json.remoteMessage : json.error;
+        res.push({ id, ok: json.ok, error: json.ok ? undefined : (detail ?? "Erreur"), message: json.ok ? detail : undefined });
       } catch {
         res.push({ id, ok: false, error: "Erreur réseau" });
       }
@@ -139,7 +141,7 @@ export function PhonesTable({ phones }: { phones: Phone[] }) {
             onClick={() => runBulk("config")}
             disabled={running !== null || selected.size === 0}
           >
-            {running === "config" ? `⟳ Config en cours… (${results.length}/${selected.size})` : "⟳ Pousser config"}
+            {running === "config" ? `⟳ Config en cours... (${results.length}/${selected.size})` : "⟳ Pousser config"}
           </button>
           <button
             className="btn btn-ghost btn-sm"
@@ -147,7 +149,7 @@ export function PhonesTable({ phones }: { phones: Phone[] }) {
             disabled={running !== null || selected.size === 0}
             style={{ borderColor: "rgba(255,107,0,0.4)", color: "var(--accent)" }}
           >
-            {running === "firmware" ? `↑ Firmware en cours… (${results.length}/${selected.size})` : "↑ Pousser firmware"}
+            {running === "firmware" ? `↑ Firmware en cours... (${results.length}/${selected.size})` : "↑ Pousser firmware"}
           </button>
           <button
             className="btn btn-ghost btn-sm"
@@ -155,15 +157,15 @@ export function PhonesTable({ phones }: { phones: Phone[] }) {
             disabled={running !== null || selected.size === 0}
             style={{ borderColor: "rgba(248,113,113,0.4)", color: "#f87171" }}
           >
-            {running === "delete" ? `✕ Suppression… (${results.length}/${selected.size})` : "✕ Supprimer"}
+            {running === "delete" ? `✕ Suppression... (${results.length}/${selected.size})` : "✕ Supprimer"}
           </button>
           {selected.size > 0 && (
             <button className="btn btn-ghost btn-sm" onClick={() => setSelected(new Set())}>Désélectionner</button>
           )}
         </div>
         <p style={{ width: "100%", margin: 0, paddingTop: 10, fontSize: 12, color: "var(--muted)", lineHeight: 1.55, borderTop: "1px solid #222" }}>
-          <strong style={{ color: "var(--text)" }}>Important :</strong> « OK » indique seulement que le <strong>serveur</strong> a enregistré ou régénéré la config.
-          Aucun fichier n’est envoyé au téléphone par cette action : le poste doit <strong>télécharger</strong> lui‑même l’URL de provisioning (bouton « Provision » / « Upgrade and Provisioning » sur l’appareil, redémarrage, ou selon l’intervalle configuré).
+          <strong style={{ color: "var(--text)" }}>Pousser config :</strong> envoie un SIP NOTIFY <code>check-sync</code> au téléphone via le SIP server (comme GDMS). Le téléphone pull ensuite sa config automatiquement.
+          Si le téléphone est hors ligne ou le NOTIFY échoue, il re-provisionnera selon son intervalle automatique.
         </p>
       </div>
 
@@ -186,9 +188,9 @@ export function PhonesTable({ phones }: { phones: Phone[] }) {
               return (
                 <div key={r.id || `hint-${i}`} style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 16px", borderBottom: "1px solid #1a1a1a", fontSize: 13 }}>
                   <span style={{ fontFamily: "monospace", fontSize: 12, color: "var(--muted)", minWidth: 140 }}>{p?.macAddress ?? r.id}</span>
-                  <span style={{ flex: 1 }}>{p?.label ?? "—"}</span>
+                  <span style={{ flex: 1 }}>{p?.label ?? "-"}</span>
                   {r.ok
-                    ? <span style={{ color: "#4ade80", fontSize: 12 }}>✓ OK</span>
+                    ? <span style={{ color: "#4ade80", fontSize: 12 }} title={r.message}>✓ OK {r.message ? `- ${r.message.slice(0, 60)}` : ""}</span>
                     : <span style={{ color: "#f87171", fontSize: 12 }}>✗ {r.error ?? "Erreur"}</span>
                   }
                 </div>
@@ -253,7 +255,7 @@ export function PhonesTable({ phones }: { phones: Phone[] }) {
                       </span>
                     </Td>
                     <Td>
-                      <div style={{ fontWeight: 600 }}>{phone.label || "—"}</div>
+                      <div style={{ fontWeight: 600 }}>{phone.label || "-"}</div>
                       {phone.extensionNumber && (
                         <div style={{ color: "var(--muted)", fontSize: 11 }}>#{phone.extensionNumber}</div>
                       )}
@@ -263,7 +265,7 @@ export function PhonesTable({ phones }: { phones: Phone[] }) {
                       <div style={{ color: "var(--muted)", fontSize: 11 }}>{phone.phoneModel.vendor}</div>
                     </Td>
                     <Td>
-                      <div style={{ color: "var(--muted)" }}>{phone.sipServer || "—"}</div>
+                      <div style={{ color: "var(--muted)" }}>{phone.sipServer || "-"}</div>
                       {phone.sipUsername && (
                         <div style={{ fontSize: 11, color: "#666" }}>{phone.sipUsername}</div>
                       )}
@@ -272,10 +274,10 @@ export function PhonesTable({ phones }: { phones: Phone[] }) {
                       {phone.firmwareTarget ? (
                         <span style={{ color: "#4ade80", fontSize: 12 }}>v{phone.firmwareTarget.version}</span>
                       ) : (
-                        <span style={{ color: "var(--muted)" }}>—</span>
+                        <span style={{ color: "var(--muted)" }}>-</span>
                       )}
                     </Td>
-                    <Td>{phone.site?.name || <span style={{ color: "var(--muted)" }}>—</span>}</Td>
+                    <Td>{phone.site?.name || <span style={{ color: "var(--muted)" }}>-</span>}</Td>
                     <Td style={{ color: "var(--muted)" }}>{phone.client.name}</Td>
                     <Td>
                       {phone.lastProvisionedAt ? (
