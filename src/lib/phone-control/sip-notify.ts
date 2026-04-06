@@ -119,26 +119,44 @@ function buildSipNotifyMessage(opts: {
   return lines.join("\r\n");
 }
 
-async function sendSipUdp(
-  message: string,
-  targetHost: string,
-  targetPort: number,
-  timeoutMs: number,
-): Promise<{ ok: boolean; status?: number; response?: string; wwwAuthenticate?: string; error?: string }> {
+type SipUdpResult = { ok: boolean; status?: number; response?: string; wwwAuthenticate?: string; error?: string };
+
+/**
+ * Envoie un NOTIFY et gère le challenge Digest 401/407 sur le MÊME socket UDP.
+ * Réutiliser le même socket est critique : le SIP server répond à l'IP:port source,
+ * si on ouvre un nouveau socket pour le 2ème NOTIFY la réponse va au mauvais port.
+ */
+async function sendSipUdpWithAuth(opts: {
+  targetHost: string;
+  targetPort: number;
+  buildMessage: (cseq: number, authHeader?: string) => string;
+  sipUsername?: string | null;
+  sipPassword?: string | null;
+  sipUri: string;
+  timeoutMs: number;
+}): Promise<SipUdpResult> {
+  const { targetHost, targetPort, buildMessage, sipUsername, sipPassword, sipUri, timeoutMs } = opts;
+
   return new Promise(resolve => {
     const socket = dgram.createSocket("udp4");
     let done = false;
+    let attempt = 0;
 
-    const finish = (result: { ok: boolean; status?: number; response?: string; wwwAuthenticate?: string; error?: string }) => {
+    const finish = (result: SipUdpResult) => {
       if (done) return;
       done = true;
       try { socket.close(); } catch { /* ignore */ }
       resolve(result);
     };
 
-    const timer = setTimeout(() => {
-      finish({ ok: false, error: "Timeout — aucune réponse SIP dans le délai imparti." });
-    }, timeoutMs);
+    let timer = setTimeout(() => finish({ ok: false, error: "Timeout — aucune réponse SIP." }), timeoutMs);
+
+    const send = (msg: string) => {
+      const buf = Buffer.from(msg, "utf8");
+      socket.send(buf, 0, buf.length, targetPort, targetHost, (err) => {
+        if (err) finish({ ok: false, error: err.message });
+      });
+    };
 
     socket.on("message", (buf: Buffer) => {
       clearTimeout(timer);
@@ -147,20 +165,51 @@ async function sendSipUdp(
       const statusLine = lines[0] || "";
       const status = parseInt(statusLine.split(" ")[1] ?? "0", 10);
 
-      // Extraire WWW-Authenticate ou Proxy-Authenticate pour Digest auth
-      const wwwAuth = lines.find(l =>
-        l.toLowerCase().startsWith("www-authenticate:") ||
-        l.toLowerCase().startsWith("proxy-authenticate:")
-      )?.replace(/^[^:]+:\s*/i, "");
+      // Succès fonctionnel
+      if (status >= 200 && status < 500 && status !== 401 && status !== 407) {
+        finish({ ok: true, status, response: statusLine });
+        return;
+      }
 
-      // 200 OK, 202, 481 = succès fonctionnel
-      // 401/407 = auth required → retourner pour relancer avec credentials
-      finish({
-        ok: status >= 200 && status < 500 && status !== 401 && status !== 407,
-        status,
-        response: statusLine,
-        wwwAuthenticate: wwwAuth,
-      });
+      // 401/407 : tenter Digest auth (une seule fois)
+      if ((status === 401 || status === 407) && attempt === 0 && sipUsername && sipPassword) {
+        attempt++;
+        const wwwAuth = lines.find(l =>
+          l.toLowerCase().startsWith("www-authenticate:") ||
+          l.toLowerCase().startsWith("proxy-authenticate:")
+        )?.replace(/^[^:]+:\s*/i, "");
+
+        if (wwwAuth) {
+          const authInfo = parseWwwAuthenticate(wwwAuth);
+          if (authInfo) {
+            const cnonce = crypto.randomBytes(4).toString("hex");
+            const nc = "00000001";
+            const authHeader = buildDigestAuth({
+              username: sipUsername,
+              password: sipPassword,
+              method: "NOTIFY",
+              uri: sipUri,
+              realm: authInfo.realm,
+              nonce: authInfo.nonce,
+              qop: authInfo.qop,
+              nc: authInfo.qop ? nc : undefined,
+              cnonce: authInfo.qop ? cnonce : undefined,
+            });
+            // Relancer sur le MÊME socket avec le header Authorization
+            timer = setTimeout(() => finish({ ok: false, error: "Timeout après Digest auth." }), timeoutMs);
+            send(buildMessage(2, authHeader));
+            return;
+          }
+        }
+      }
+
+      // 403 = mauvais credentials
+      if (status === 403) {
+        finish({ ok: false, status, response: statusLine, error: "403 Forbidden — vérifier le mot de passe SIP." });
+        return;
+      }
+
+      finish({ ok: false, status, response: statusLine });
     });
 
     socket.on("error", (err: Error) => {
@@ -168,13 +217,8 @@ async function sendSipUdp(
       finish({ ok: false, error: err.message });
     });
 
-    const buf = Buffer.from(message, "utf8");
-    socket.send(buf, 0, buf.length, targetPort, targetHost, (err) => {
-      if (err) {
-        clearTimeout(timer);
-        finish({ ok: false, error: err.message });
-      }
-    });
+    // Premier envoi
+    send(buildMessage(1));
   });
 }
 
@@ -222,81 +266,41 @@ export async function sendSipNotify(opts: SipNotifyOptions): Promise<SipNotifyRe
 
   const sipDomain = sipServer ? parseSipServer(sipServer).host : (phoneIp ?? "localhost");
 
-  // Essai sur chaque cible avec support Digest Auth (401/407 challenge)
-  for (const target of targets) {
-    const sipUri = `sip:${sipUsername}@${sipDomain}`;
+  const sipUri = `sip:${sipUsername}@${sipDomain}`;
 
-    // Première tentative (sans auth)
-    const msg1 = buildSipNotifyMessage({
+  // Essai sur chaque cible — même socket pour le challenge Digest 401/407
+  for (const target of targets) {
+    const result = await sendSipUdpWithAuth({
       targetHost: target.host,
       targetPort: target.port,
+      sipUri,
       sipUsername,
-      sipDomain,
-      event,
-      callId,
-      localIp,
-      cseq: 1,
+      sipPassword,
+      timeoutMs,
+      buildMessage: (cseq, authHeader) => buildSipNotifyMessage({
+        targetHost: target.host,
+        targetPort: target.port,
+        sipUsername,
+        sipDomain,
+        event,
+        callId,
+        localIp,
+        cseq,
+        authHeader,
+      }),
     });
 
-    const r1 = await sendSipUdp(msg1, target.host, target.port, timeoutMs);
-
-    if (r1.ok) {
+    if (result.ok) {
       return {
         ok: true,
         method: `SIP NOTIFY UDP → ${target.label}`,
-        message: `${event === "reboot" ? "Reboot" : "Re-provisioning"} demandé — réponse: ${r1.response ?? "OK"}`,
+        message: `${event === "reboot" ? "Reboot" : "Re-provisioning"} demandé — réponse: ${result.response ?? "OK"}`,
       };
     }
 
-    // 401 ou 407 → Digest challenge
-    if ((r1.status === 401 || r1.status === 407) && r1.wwwAuthenticate && sipPassword) {
-      const authInfo = parseWwwAuthenticate(r1.wwwAuthenticate);
-      if (authInfo) {
-        const cnonce = crypto.randomBytes(4).toString("hex");
-        const nc = "00000001";
-        const authHeader = buildDigestAuth({
-          username: sipUsername,
-          password: sipPassword,
-          method: "NOTIFY",
-          uri: sipUri,
-          realm: authInfo.realm,
-          nonce: authInfo.nonce,
-          qop: authInfo.qop,
-          nc: authInfo.qop ? nc : undefined,
-          cnonce: authInfo.qop ? cnonce : undefined,
-        });
-
-        const msg2 = buildSipNotifyMessage({
-          targetHost: target.host,
-          targetPort: target.port,
-          sipUsername,
-          sipDomain,
-          event,
-          callId,
-          localIp,
-          cseq: 2,
-          authHeader,
-        });
-
-        const r2 = await sendSipUdp(msg2, target.host, target.port, timeoutMs);
-        if (r2.ok) {
-          return {
-            ok: true,
-            method: `SIP NOTIFY UDP + Digest Auth → ${target.label}`,
-            message: `${event === "reboot" ? "Reboot" : "Re-provisioning"} demandé — réponse: ${r2.response ?? "OK"}`,
-          };
-        }
-        // Auth échouée (403 mauvais mdp, etc.)
-        if (r2.status === 403) {
-          return {
-            ok: false,
-            method: `SIP NOTIFY UDP → ${target.label}`,
-            message: `Authentification SIP refusée (403) — vérifier le mot de passe SIP du téléphone.`,
-          };
-        }
-      }
+    if (result.error?.includes("403")) {
+      return { ok: false, method: `SIP NOTIFY → ${target.label}`, message: result.error };
     }
-
     // Timeout ou autre erreur → essayer la prochaine cible
   }
 
