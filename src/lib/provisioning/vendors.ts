@@ -35,7 +35,8 @@ export function getFirmwareBaseUrl() {
 }
 
 function formatValue(value: string) {
-  if (value === "") return '""';
+  // Yealink n'accepte pas les guillemets — retourner la valeur telle quelle (vide = vide)
+  if (value === "") return "";
   if (/\s/.test(value) || value.includes(",") || value.includes(";")) {
     return `"${value.replace(/"/g, '\\"')}"`;
   }

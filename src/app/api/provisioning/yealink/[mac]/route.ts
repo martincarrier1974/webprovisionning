@@ -20,10 +20,12 @@ export async function GET(
   // Example requests: y000000000000.cfg, 805EC0EA1251.cfg, 805EC0EA1251, 80:5E:C0:EA:12:51.cfg
   const lowered = rawMac.toLowerCase();
   const isCommonConfig = lowered === "y000000000000.cfg" || lowered === "y000000000000";
+  // Yealink demande aussi un fichier modèle ex: y000000000058.cfg (T33G=58, T46U=66, etc.)
+  // On retourne un fichier vide pour que le téléphone continue sans erreur 404
+  const isModelConfig = /^y\d{12}\.cfg$/.test(lowered) && !isCommonConfig;
 
-  if (isCommonConfig) {
-    // Return a harmless 200 so the phone continues its provisioning sequence.
-    return new NextResponse("# common yealink config\n", {
+  if (isCommonConfig || isModelConfig) {
+    return new NextResponse("#!version:1.0.0.1\n", {
       status: 200,
       headers: { "content-type": "text/plain; charset=utf-8", "x-provisioning-vendor": "yealink" },
     });
