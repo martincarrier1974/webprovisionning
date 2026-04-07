@@ -746,13 +746,9 @@ export function renderProvisioningConfig(
     // Correction automatique des règles problématiques pour Grandstream
     if (vendor === "grandstream") {
       // P212 doit être 1 (HTTP) ou 2 (HTTPS), pas une URL NTP
-      // Ignorer cette règle si elle vient de DEFAULT ou MODEL avec une mauvaise valeur
+      // Pour toute règle avec une mauvaise valeur, on la remplace par la bonne valeur
       if (entry.key === "P212" && (entry.value === "pool.ntp.org" || entry.value.includes("ntp"))) {
-        // Si c'est une règle DEFAULT ou MODEL, on l'ignore complètement
-        if (entry.source === "DEFAULT" || entry.source === "MODEL" || entry.source === "CLIENT") {
-          continue; // Ignorer cette mauvaise règle
-        }
-        // Pour les règles PHONE/SITE, on la corrige
+        // Toujours remplacer par la bonne valeur, peu importe la source
         const baseUrl = getProvisioningBaseUrl();
         mergedRules.set(entry.key, grandstreamUpgradeViaCode(baseUrl));
         continue;
