@@ -430,7 +430,7 @@ function buildBaseEntries(vendor: SupportedVendor, context: PhoneProvisioningCon
     ["P329", "1"],   // Enable PC port
 
     // ── Programmable keys globals ─────────────────────────────────────────
-    ["P1362", "0"],  // Key mode: 0=LineMode, 1=AccountMode
+    ["P1362", "1"],  // Key mode: 0=LineMode, 1=AccountMode (1 needed for programmable keys)
     ["P1363", "1"],  // Show keys label
     ["P1364", "0"],  // Show Label Background
     ["P1365", "0"],  // Use Long Label
@@ -639,11 +639,11 @@ function buildProgrammableKeyEntries(vendor: SupportedVendor, context: PhoneProv
     const modeMap: Record<string, string> = {
       BLF: "16",
       SPEED_DIAL: "0",
-      CALL_PARK: "58",
+      CALL_PARK: "11",      // Grandstream: 11 = Call Park
       INTERCOM: "8",
-      FORWARD: "7",
-      DND: "10",
-      RECORD: "17",
+      FORWARD: "4",        // Grandstream: 4 = Forward
+      DND: "9",           // Grandstream: 9 = DND
+      RECORD: "7",        // Grandstream: 7 = Record
       DEFAULT: "0",
       NONE: "0",
     };
@@ -736,10 +736,65 @@ export function renderProvisioningConfig(
   // ni le key_mode (qui doit rester AccountMode=1 pour que BLF/SpeedDial fonctionnent)
   const protectedPrefixes = vendor === "yealink"
     ? ["linekey.key_mode"]
+    : vendor === "grandstream"
+    ? ["P1362", "P323", "P324", "P325", "P326", "P1400", "P1401", "P1402", "P1403"]
     : [];
 
   for (const entry of resolvedEntries) {
     if (protectedPrefixes.some(p => entry.key === p)) continue;
+    
+    // Correction automatique des règles problématiques pour Grandstream
+    if (vendor === "grandstream") {
+      // P212 doit être 1 (HTTP) ou 2 (HTTPS), pas une URL NTP
+      // Ignorer cette règle si elle vient de DEFAULT ou MODEL avec une mauvaise valeur
+      if (entry.key === "P212" && (entry.value === "pool.ntp.org" || entry.value.includes("ntp"))) {
+        // Si c'est une règle DEFAULT ou MODEL, on l'ignore complètement
+        if (entry.source === "DEFAULT" || entry.source === "MODEL" || entry.source === "CLIENT") {
+          continue; // Ignorer cette mauvaise règle
+        }
+        // Pour les règles PHONE/SITE, on la corrige
+        const baseUrl = getProvisioningBaseUrl();
+        mergedRules.set(entry.key, grandstreamUpgradeViaCode(baseUrl));
+        continue;
+      }
+      
+      // P1362 doit être 1 (AccountMode) pour les touches programmables
+      // Ignorer les règles DEFAULT/MODEL/CLIENT qui forcent LineMode (0)
+      if (entry.key === "P1362" && entry.value === "0") {
+        if (entry.source === "DEFAULT" || entry.source === "MODEL" || entry.source === "CLIENT") {
+          continue; // Ignorer cette mauvaise règle
+        }
+        mergedRules.set(entry.key, "1");
+        continue;
+      }
+      
+      // Correction des modes de touches incorrects (valeurs Yealink -> Grandstream)
+      const keyIndexMatch = entry.key.match(/^P(\d+)$/);
+      if (keyIndexMatch) {
+        const keyNum = parseInt(keyIndexMatch[1], 10);
+        // P323, P327, P331, P335, P339, etc. (modes de touches MPK)
+        if (keyNum >= 323 && keyNum <= 518 && (keyNum - 323) % 4 === 0) {
+          // C'est un paramètre de mode (P323, P327, P331, etc.)
+          const wrongModes: Record<string, string> = {
+            "58": "11",  // CALL_PARK Yealink -> Grandstream
+            "7": "4",    // FORWARD Yealink -> Grandstream
+            "10": "9",   // DND Yealink -> Grandstream
+            "17": "7"    // RECORD Yealink -> Grandstream
+          };
+          
+          if (entry.value in wrongModes) {
+            // Si c'est une règle DEFAULT/MODEL/CLIENT avec une valeur Yealink, on l'ignore
+            if (entry.source === "DEFAULT" || entry.source === "MODEL" || entry.source === "CLIENT") {
+              continue; // Ignorer cette mauvaise règle
+            }
+            // Pour PHONE/SITE, on la corrige
+            mergedRules.set(entry.key, wrongModes[entry.value]!);
+            continue;
+          }
+        }
+      }
+    }
+    
     mergedRules.set(entry.key, entry.value);
   }
 
