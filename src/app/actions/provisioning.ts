@@ -74,3 +74,18 @@ export async function createProvisioningRuleAction(
   revalidatePath("/dashboard");
   return { success: "Règle créée avec succès." };
 }
+
+export async function deleteProvisioningRuleAction(id: string) {
+  'use server';
+  
+  await requireAdmin();
+  
+  try {
+    await db.provisioningRule.delete({ where: { id } });
+    revalidatePath("/dashboard/rules");
+    return { success: "Règle supprimée avec succès." };
+  } catch (error) {
+    console.error("Erreur suppression règle:", error);
+    return { error: "Échec de la suppression." };
+  }
+}

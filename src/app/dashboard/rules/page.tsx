@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { CreateProvisioningRuleForm } from "@/components/admin/create-provisioning-rule-form";
 import { ClientSelector } from "@/components/dashboard/client-selector";
 import { db } from "@/lib/db";
+import { deleteProvisioningRuleAction } from "@/app/actions/provisioning";
 
 type Props = {
   searchParams: Promise<{ clientId?: string }>;
@@ -93,7 +94,32 @@ export default async function RulesPage({ searchParams }: Props) {
                       {` · ordre ${rule.sortOrder}`}
                     </div>
                   </div>
-                  <span className="item-row-badge">{rule.source}</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span className="item-row-badge">{rule.source}</span>
+                    <form action={() => deleteProvisioningRuleAction(rule.id)}>
+                      <button 
+                        type="submit"
+                        className="delete-button"
+                        style={{
+                          background: "#dc2626",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "6px",
+                          padding: "4px 12px",
+                          fontSize: "12px",
+                          cursor: "pointer",
+                          fontWeight: "600"
+                        }}
+                        onClick={(e) => {
+                          if (!confirm('Supprimer cette règle?')) {
+                            e.preventDefault();
+                          }
+                        }}
+                      >
+                        Supprimer
+                      </button>
+                    </form>
+                  </div>
                 </div>
               ))}
             </div>

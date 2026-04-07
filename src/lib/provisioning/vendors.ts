@@ -755,12 +755,22 @@ export function renderProvisioningConfig(
     // Correction automatique des règles problématiques pour Grandstream
     if (vendor === "grandstream") {
       // P212 doit être 1 (HTTP) ou 2 (HTTPS), pas une URL NTP
-      // Pour toute règle avec une mauvaise valeur, on la remplace par la bonne valeur
-      if (entry.key === "P212" && (entry.value === "pool.ntp.org" || entry.value.includes("ntp"))) {
-        // Toujours remplacer par la bonne valeur, peu importe la source
-        const baseUrl = getProvisioningBaseUrl();
-        mergedRules.set(entry.key, grandstreamUpgradeViaCode(baseUrl));
-        continue;
+      // CORRECTION FORCÉE : ignorer TOUTES les règles P212 qui contiennent "ntp" ou "pool"
+      if (entry.key === "P212") {
+        // Ignorer les règles avec des valeurs NTP problématiques
+        if (entry.value.includes("ntp") || entry.value.includes("pool")) {
+          console.warn(`Ignoring problematic P212 rule: ${entry.value} from source ${entry.source}`);
+          continue; // Ignorer complètement cette règle
+        }
+        
+        // Si P237 est défini et HTTPS, P212 doit être 2
+        const p237Value = mergedRules.get("P237");
+        if (p237Value && p237Value.startsWith("https://")) {
+          mergedRules.set("P212", "2");
+        } else {
+          mergedRules.set("P212", "1");
+        }
+        continue; // Ignorer la règle originale
       }
 
       // P1362 doit être 1 (AccountMode) pour les touches programmables
