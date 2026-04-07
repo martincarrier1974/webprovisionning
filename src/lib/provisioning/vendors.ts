@@ -35,7 +35,7 @@ export function getFirmwareBaseUrl() {
 }
 
 function formatValue(value: string) {
-  // Yealink n'accepte pas les guillemets — retourner la valeur telle quelle (vide = vide)
+  // Yealink n'accepte pas les guillemets - retourner la valeur telle quelle (vide = vide)
   if (value === "") return "";
   if (/\s/.test(value) || value.includes(",") || value.includes(";")) {
     return `"${value.replace(/"/g, '\\"')}"`;
@@ -47,7 +47,7 @@ function yesNo(value: boolean) {
   return value ? "1" : "0";
 }
 
-/** L’UI envoie « Account1 »…« Account6 » ; les P-codes MPK/VMPK Grandstream attendent 1…6. */
+/** L'UI envoie « Account1 »...« Account6 » ; les P-codes MPK/VMPK Grandstream attendent 1...6. */
 function grandstreamAccountIndexFromUi(account: string | null | undefined): string {
   const raw = (account ?? "").trim();
   const m = /^Account(\d+)$/i.exec(raw);
@@ -87,13 +87,19 @@ function splitHostPort(value: string | null | undefined): { host: string; port: 
 
 /**
  * GXP21xx P212 = « Upgrade via » (téléchargement config / firmware).
- * Beaucoup de firmwares n’acceptent que 0=TFTP et 1=HTTP ; le HTTPS suit souvent l’URL dans P237 quand P212=1.
+ * Beaucoup de firmwares n'acceptent que 0=TFTP et 1=HTTP ; le HTTPS suit souvent l'URL dans P237 quand P212=1.
  * Mettre 2 (HTTPS explicite) peut empêcher tout téléchargement sur anciennes versions.
  * Surcharge : GRANDSTREAM_P212_UPGRADE_VIA=1|2|0
+ * Si P237 est HTTPS, on force P212=2 pour être sûr.
  */
-function grandstreamUpgradeViaCode(_baseUrl: string): string {
+function grandstreamUpgradeViaCode(baseUrl: string): string {
   const override = (process.env.GRANDSTREAM_P212_UPGRADE_VIA ?? "").trim();
   if (override && /^\d+$/.test(override)) return override;
+  
+  // Si l'URL de base est HTTPS, utiliser 2 (HTTPS), sinon 1 (HTTP)
+  if (baseUrl.startsWith("https://")) {
+    return "2";
+  }
   return "1";
 }
 
@@ -126,7 +132,7 @@ function buildBaseEntries(vendor: SupportedVendor, context: PhoneProvisioningCon
   const firmwareUrl = context.firmwareTarget
     ? `${baseUrl}/api/firmware/${context.firmwareTarget.storageKey}`
     : null;
-  // URL de dossier virtuel par modèle — Grandstream P192 attend un répertoire de base
+  // URL de dossier virtuel par modèle - Grandstream P192 attend un répertoire de base
   const firmwareFolderUrl = context.firmwareTarget
     ? `${baseUrl}/api/firmware/${context.phoneModel.vendor.toLowerCase()}/${context.phoneModel.modelCode.toUpperCase()}/`
     : null;
@@ -254,7 +260,7 @@ function buildBaseEntries(vendor: SupportedVendor, context: PhoneProvisioningCon
       ["account.1.rtcp.enable", "1"],
 
       // ── Programmable keys globals ─────────────────────────────────────
-      ["linekey.key_mode", "1"],                   // 1=AccountMode — permet de configurer les touches librement (BLF, SpeedDial, etc.)
+      ["linekey.key_mode", "1"],                   // 1=AccountMode - permet de configurer les touches librement (BLF, SpeedDial, etc.)
       ["linekey.show_label", "1"],
       ["features.blf_pickup_code", "**"],
 
@@ -282,14 +288,14 @@ function buildBaseEntries(vendor: SupportedVendor, context: PhoneProvisioningCon
     ["P35", context.sipUsername || ""],           // SIP User ID
     ["P34", context.sipPassword || ""],           // Authenticate Password
     ["P36", context.sipUsername || ""],           // Authenticate ID
-    ["P192", firmwareBaseUrl || firmwareFolderUrl || ""], // Firmware Server Path — doit être un répertoire (le téléphone ajoute le nom du fichier)
+    ["P192", firmwareBaseUrl || firmwareFolderUrl || ""], // Firmware Server Path - doit être un répertoire (le téléphone ajoute le nom du fichier)
     ["P2", context.adminPassword || "admin"],     // Admin password
     // Provisioning
     ["P237", `${baseUrl}/api/provisioning/grandstream/`], // Config server base path (phone appends cfgMAC.xml)
-    ["P212", grandstreamUpgradeViaCode(baseUrl)], // 1=HTTP 2=HTTPS — requis pour télécharger cfg depuis P237
-    ["P145", "0"],                                // Ne pas laisser DHCP Option 43/66 écraser l’URL de provision
+    ["P212", grandstreamUpgradeViaCode(baseUrl)], // 1=HTTP 2=HTTPS - requis pour télécharger cfg depuis P237
+    ["P145", "0"],                                // Ne pas laisser DHCP Option 43/66 écraser l'URL de provision
     // ── NTP / Time / Language ─────────────────────────────────────────────
-    ["P213", "1440"],                             // Intervalle sync (min) — selon firmware
+    ["P213", "1440"],                             // Intervalle sync (min) - selon firmware
     ["P64", "-5"],                                // Timezone offset (EST)
     ["P75", "0"],    // Allow DHCP Option 2 override timezone: No
     ["P246", yesNo(Boolean(context.sipUsername))],
@@ -442,7 +448,7 @@ function buildBaseEntries(vendor: SupportedVendor, context: PhoneProvisioningCon
     ["P1371", "0"],  // Show Target Softkey
     ["P1464", "**"], // BLF call-pickup prefix
 
-    // P192 ci-dessus gère déjà le firmware — P232 retiré (doublon)
+    // P192 ci-dessus gère déjà le firmware - P232 retiré (doublon)
   ] as Array<[string, string]>;
 }
 
@@ -563,7 +569,7 @@ function buildSipAccountEntries(vendor: SupportedVendor, context: PhoneProvision
       entries.push([`account.${i}.sip_server.1.address`, accSip.host]);
       entries.push([`account.${i}.sip_server.1.port`, accSip.port]);
     } else if (vendor === "grandstream") {
-      // Comptes 2+ : décalages P à documenter par modèle ; l’ancien offset écrasait P102 etc.
+      // Comptes 2+ : décalages P à documenter par modèle ; l'ancien offset écrasait P102 etc.
       continue;
     } else if (vendor === "snom") {
       entries.push([`user_name${i}`, acc.sipUsername || ""]);
@@ -654,14 +660,14 @@ function buildProgrammableKeyEntries(vendor: SupportedVendor, context: PhoneProv
 
       const acct = grandstreamAccountIndexFromUi(key.account);
       if (hasVmpk && key.keyIndex > physicalCapacity) {
-        // VMPK (Virtual MPK) — P1400-based, 0-indexed global
+        // VMPK (Virtual MPK) - P1400-based, 0-indexed global
         const vIdx = idx; // keyIndex - 1
         entries.push([`P${1400 + vIdx * 4}`, typeCode]);          // VMPK mode
-        entries.push([`P${1401 + vIdx * 4}`, acct]);               // account (1–6)
+        entries.push([`P${1401 + vIdx * 4}`, acct]);               // account (1-6)
         entries.push([`P${1402 + vIdx * 4}`, key.value ?? ""]);    // value
         entries.push([`P${1403 + vIdx * 4}`, key.description ?? ""]); // label
       } else {
-        // MPK physique — P323-based
+        // MPK physique - P323-based
         entries.push([`P${323 + idx * 4}`, typeCode]);
         entries.push([`P${324 + idx * 4}`, acct]);
         entries.push([`P${325 + idx * 4}`, key.value ?? ""]);
@@ -742,7 +748,7 @@ export function renderProvisioningConfig(
 
   for (const entry of resolvedEntries) {
     if (protectedPrefixes.some(p => entry.key === p)) continue;
-    
+
     // Correction automatique des règles problématiques pour Grandstream
     if (vendor === "grandstream") {
       // P212 doit être 1 (HTTP) ou 2 (HTTPS), pas une URL NTP
@@ -753,7 +759,7 @@ export function renderProvisioningConfig(
         mergedRules.set(entry.key, grandstreamUpgradeViaCode(baseUrl));
         continue;
       }
-      
+
       // P1362 doit être 1 (AccountMode) pour les touches programmables
       // Ignorer les règles DEFAULT/MODEL/CLIENT qui forcent LineMode (0)
       if (entry.key === "P1362" && entry.value === "0") {
@@ -763,7 +769,7 @@ export function renderProvisioningConfig(
         mergedRules.set(entry.key, "1");
         continue;
       }
-      
+
       // Correction des modes de touches incorrects (valeurs Yealink -> Grandstream)
       const keyIndexMatch = entry.key.match(/^P(\d+)$/);
       if (keyIndexMatch) {
@@ -777,7 +783,7 @@ export function renderProvisioningConfig(
             "10": "9",   // DND Yealink -> Grandstream
             "17": "7"    // RECORD Yealink -> Grandstream
           };
-          
+
           if (entry.value in wrongModes) {
             // Si c'est une règle DEFAULT/MODEL/CLIENT avec une valeur Yealink, on l'ignore
             if (entry.source === "DEFAULT" || entry.source === "MODEL" || entry.source === "CLIENT") {
@@ -790,7 +796,7 @@ export function renderProvisioningConfig(
         }
       }
     }
-    
+
     mergedRules.set(entry.key, entry.value);
   }
 
