@@ -95,7 +95,7 @@ function splitHostPort(value: string | null | undefined): { host: string; port: 
 function grandstreamUpgradeViaCode(baseUrl: string): string {
   const override = (process.env.GRANDSTREAM_P212_UPGRADE_VIA ?? "").trim();
   if (override && /^\d+$/.test(override)) return override;
-  
+
   // Si l'URL de base est HTTPS, utiliser 2 (HTTPS), sinon 1 (HTTP)
   if (baseUrl.startsWith("https://")) {
     return "2";
@@ -288,7 +288,8 @@ function buildBaseEntries(vendor: SupportedVendor, context: PhoneProvisioningCon
     ["P35", context.sipUsername || ""],           // SIP User ID
     ["P34", context.sipPassword || ""],           // Authenticate Password
     ["P36", context.sipUsername || ""],           // Authenticate ID
-    ["P192", firmwareBaseUrl || firmwareFolderUrl || ""], // Firmware Server Path - doit être un répertoire (le téléphone ajoute le nom du fichier)
+    ["P192", firmwareBaseUrl || firmwareFolderUrl || ""], // Firmware Server Path — doit être un répertoire (le téléphone ajoute le nom du fichier)
+    // P232 retiré (doublon avec P192)
     ["P2", context.adminPassword || "admin"],     // Admin password
     // Provisioning
     ["P237", `${baseUrl}/api/provisioning/grandstream/`], // Config server base path (phone appends cfgMAC.xml)
@@ -668,6 +669,8 @@ function buildProgrammableKeyEntries(vendor: SupportedVendor, context: PhoneProv
         entries.push([`P${1403 + vIdx * 4}`, key.description ?? ""]); // label
       } else {
         // MPK physique - P323-based
+        // Grandstream: P323 = MPK 1, P327 = MPK 2, P331 = MPK 3, P335 = MPK 4, etc.
+        // idx = keyIndex - 1 (0-indexed)
         entries.push([`P${323 + idx * 4}`, typeCode]);
         entries.push([`P${324 + idx * 4}`, acct]);
         entries.push([`P${325 + idx * 4}`, key.value ?? ""]);
