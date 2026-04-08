@@ -441,7 +441,8 @@ function buildBaseEntries(vendor: SupportedVendor, context: PhoneProvisioningCon
     ["P1363", "1"],  // Show keys label
     ["P1364", "0"],  // Show Label Background
     ["P1365", "0"],  // Use Long Label
-    ["P1366", "0"],  // Show VPK Icon
+    // CORRECTION: Activer VPK Icon pour modèles avec VPK
+    ["P1366", context.phoneModel.modelCode.toUpperCase().match(/^(GXP2130|GXP2135|GXP2140|GXP1610|GXP1615|GXP1620|GXP1625|GXP1628|GXP1630)$/) ? "1" : "0"],  // Show VPK Icon
     ["P1367", "0"],  // Enable Transfer via Non-Transfer Programmable Keys
     ["P1368", "1"],  // More Softkey Display Mode: 1=Menu
     ["P1369", "1"],  // Custom Call Screen Softkey Layout

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 type Key = {
   id?: string;
@@ -132,18 +132,9 @@ export function TabKeys({ phone, initialKeys }: Props) {
         
         setKeys(sortedKeys);
         
-        // Mettre à jour enabled et vmpkEnabled
-        const hasConfiguredKeys = sortedKeys.some(k => k.mode !== "DEFAULT" && k.mode !== "NONE");
-        setEnabled(hasConfiguredKeys);
-        
-        if (supportsVmpk) {
-          const hasConfiguredVmpk = sortedKeys.some(k => 
-            k.keyIndex > physicalCapacity && 
-            k.mode !== "DEFAULT" && 
-            k.mode !== "NONE"
-          );
-          setVmpkEnabled(hasConfiguredVmpk);
-        }
+        // NOTE: Ne pas mettre à jour enabled et vmpkEnabled automatiquement
+        // pour éviter la désactivation après rechargement
+        // L'utilisateur contrôle manuellement ces options
       }
     } catch (error) {
       console.error("Erreur rechargement touches:", error);
@@ -174,25 +165,8 @@ export function TabKeys({ phone, initialKeys }: Props) {
     setKeys(prev => prev.map((k, i) => i === index ? { ...k, [field]: val } : k));
   }
 
-  // Mettre à jour 'enabled' automatiquement quand des touches sont configurées
-  useEffect(() => {
-    const hasConfiguredKeys = keys.some(k => k.mode !== "DEFAULT" && k.mode !== "NONE");
-    if (hasConfiguredKeys !== enabled) {
-      setEnabled(hasConfiguredKeys);
-    }
-    
-    // Mettre à jour vmpkEnabled automatiquement si une touche VMPK est configurée
-    if (supportsVmpk) {
-      const hasConfiguredVmpk = keys.some(k => 
-        k.keyIndex > physicalCapacity && 
-        k.mode !== "DEFAULT" && 
-        k.mode !== "NONE"
-      );
-      if (hasConfiguredVmpk !== vmpkEnabled) {
-        setVmpkEnabled(hasConfiguredVmpk);
-      }
-    }
-  }, [keys, supportsVmpk, physicalCapacity]); // removed enabled and vmpkEnabled from dependencies
+  // NOTE: Le useEffect a été supprimé car il causait la désactivation automatique des options
+  // après rechargement des données. L'utilisateur contrôle manuellement 'enabled' et 'vmpkEnabled'.
 
   function selectAll() {
     setKeys(prev => prev.map(k => ({ ...k, mode: "BLF" })));
