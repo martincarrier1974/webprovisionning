@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 type Key = {
   id?: string;
@@ -153,13 +153,17 @@ export function TabKeys({ phone, initialKeys }: Props) {
   );
 
   const [keys, setKeys] = useState<Key[]>(() => {
-    const filled = [...initialKeys];
-    for (let i = filled.length; i < totalCapacity; i++) filled.push(emptyKey(i + 1));
-    return filled.sort((a, b) => a.keyIndex - b.keyIndex);
+    // Initialiser avec des touches vides, on chargera depuis l'API après
+    return Array.from({ length: totalCapacity }, (_, i) => emptyKey(i + 1));
   });
 
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  // Charger les touches depuis l'API au montage du composant
+  useEffect(() => {
+    reloadKeys();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   function updateKey(index: number, field: keyof Key, val: string | boolean) {
     setKeys(prev => prev.map((k, i) => i === index ? { ...k, [field]: val } : k));
