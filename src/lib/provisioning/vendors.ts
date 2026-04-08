@@ -633,15 +633,21 @@ function buildProgrammableKeyEntries(vendor: SupportedVendor, context: PhoneProv
     }
   } else {
     // Grandstream: MPK physiques (P323+) et VMPK (P1400+) selon modèle
-    // GXP2130/2135 : 8 MPK physiques (idx 1-8) + jusqu'à 16 VMPK (idx 9-24)
-    // GXP2160      : 24 MPK physiques
-    // GXP2170      : 48 MPK physiques
+    // CORRECTION: GXP2130/2135/2140 n'ont pas de MPK physiques → TOUJOURS VMPK (P1400+)
+    // GXP2160      : 24 MPK physiques (P323+)
+    // GXP2170      : 48 MPK physiques (P323+)
     // GXP16xx      : pas de MPK physique → VMPK seulement
+    // GXP2130/2135/2140 : pas de MPK physique → VMPK seulement (même pour touches 1-8)
     const modelCode = context.phoneModel.modelCode.toUpperCase();
     const physicalCapacity = context.phoneModel.lineCapacity ?? 0;
 
     // Modèles avec VMPK (P1400+) : GXP2130, GXP2135, et les GXP1xxx
     const hasVmpk = ["GXP2130", "GXP2135", "GXP1610", "GXP1615", "GXP1620", "GXP1625", "GXP1628", "GXP1630"].includes(modelCode);
+    
+    // CORRECTION: Modèles qui utilisent TOUJOURS VMPK (pas de MPK physiques)
+    // GXP2130, GXP2135, GXP2140 n'ont pas de vraies touches physiques programmables
+    const alwaysVmpkModels = ["GXP2130", "GXP2135", "GXP2140", "GXP1610", "GXP1615", "GXP1620", "GXP1625", "GXP1628", "GXP1630"];
+    const useAlwaysVmpk = alwaysVmpkModels.includes(modelCode);
 
     const modeMap: Record<string, string> = {
       BLF: "16",
@@ -660,7 +666,11 @@ function buildProgrammableKeyEntries(vendor: SupportedVendor, context: PhoneProv
       const typeCode = modeMap[key.mode] ?? "0";
 
       const acct = grandstreamAccountIndexFromUi(key.account);
-      if (hasVmpk && key.keyIndex > physicalCapacity) {
+      
+      // CORRECTION: Utiliser VMPK pour tous les modèles alwaysVmpkModels
+      // Ancienne logique: if (hasVmpk && key.keyIndex > physicalCapacity)
+      // Nouvelle logique: if (useAlwaysVmpk || (hasVmpk && key.keyIndex > physicalCapacity))
+      if (useAlwaysVmpk || (hasVmpk && key.keyIndex > physicalCapacity)) {
         // VMPK (Virtual MPK) - P1400-based, 0-indexed global
         const vIdx = idx; // keyIndex - 1
         entries.push([`P${1400 + vIdx * 4}`, typeCode]);          // VMPK mode
@@ -668,7 +678,7 @@ function buildProgrammableKeyEntries(vendor: SupportedVendor, context: PhoneProv
         entries.push([`P${1402 + vIdx * 4}`, key.value ?? ""]);    // value
         entries.push([`P${1403 + vIdx * 4}`, key.description ?? ""]); // label
       } else {
-        // MPK physique - P323-based
+        // MPK physique - P323-based (seulement pour GXP2160/2170)
         // Grandstream: P323 = MPK 1, P327 = MPK 2, P331 = MPK 3, P335 = MPK 4, etc.
         // idx = keyIndex - 1 (0-indexed)
         entries.push([`P${323 + idx * 4}`, typeCode]);
