@@ -862,3 +862,42 @@ export function renderProvisioningConfig(
 
   return [...header, ...body].join("\n");
 }
+
+export function renderGrandstreamText(
+  context: PhoneProvisioningContext,
+  resolvedEntries: ResolvedRuleEntry[] = []
+): string {
+  const normalizedMac = normalizeMac(context.macAddress);
+  const mergedRules = new Map<string, string>();
+
+  for (const [key, value] of buildBaseEntries("grandstream", context)) {
+    mergedRules.set(key, value);
+  }
+  for (const [key, value] of buildSipAccountEntries("grandstream", context)) {
+    mergedRules.set(key, value);
+  }
+  for (const [key, value] of buildProgrammableKeyEntries("grandstream", context)) {
+    mergedRules.set(key, value);
+  }
+  for (const entry of resolvedEntries) {
+    mergedRules.set(entry.key, entry.value);
+  }
+
+  const items = Array.from(mergedRules.entries())
+    .sort((a, b) => {
+      const aNum = parseInt(a[0].replace(/^P/, ''), 10);
+      const bNum = parseInt(b[0].replace(/^P/, ''), 10);
+      if (!isNaN(aNum) && !isNaN(bNum)) return aNum - bNum;
+      return a[0].localeCompare(b[0]);
+    });
+
+  // Format texte Grandstream (Pxxx=valeur) - comme export natif
+  const lines = [
+    `# Generated on ${new Date().toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' })} by ${context.phoneModel.displayName} [${normalizedMac}]`,
+    `# boot 1.0.7.4 core 1.0.11.49 base 1.0.11.67 prog 1.0.11.103`, // Placeholder - on pourrait récupérer du téléphone
+    ...items.map(([key, value]) => `${key}=${value}`),
+    '# End of exported configuration',
+  ];
+
+  return lines.join('\n');
+}

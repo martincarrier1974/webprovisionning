@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { db } from "@/lib/db";
 import { getProvisioningContextByMac, getResolvedProvisioningRules } from "@/lib/provisioning/rules";
-import { isValidMac, normalizeMac, renderGrandstreamXml } from "@/lib/provisioning/vendors";
+import { isValidMac, normalizeMac, renderGrandstreamText } from "@/lib/provisioning/vendors";
 import { sendWebhook } from "@/lib/webhooks/notify";
 
 function emptyGrandstreamProvisionXml(comment: string) {
@@ -90,8 +90,8 @@ export async function GET(
 
   const resolved = await getResolvedProvisioningRules(phone);
 
-  // GXP always expects XML for downloaded provision files (some firmware omit the .xml suffix in the path)
-  const content = renderGrandstreamXml(phone, resolved.resolvedEntries);
+  // CORRECTION: Utiliser format texte (Pxxx=valeur) au lieu de XML - plus fiable pour Grandstream
+  const content = renderGrandstreamText(phone, resolved.resolvedEntries);
 
   await db.phone.update({
     where: { id: phone.id },
