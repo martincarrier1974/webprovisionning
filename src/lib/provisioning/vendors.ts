@@ -438,6 +438,7 @@ function buildBaseEntries(vendor: SupportedVendor, context: PhoneProvisioningCon
 
     // ── Programmable keys globals ─────────────────────────────────────────
     ["P1362", "1"],  // Key mode: 0=LineMode, 1=AccountMode (1 needed for programmable keys)
+    // CORRECTION: Toujours activer Show keys label pour VMPK
     ["P1363", "1"],  // Show keys label
     ["P1364", "0"],  // Show Label Background
     ["P1365", "0"],  // Use Long Label
