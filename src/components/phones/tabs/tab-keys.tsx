@@ -108,6 +108,47 @@ function KeysTable({
 }
 
 export function TabKeys({ phone, initialKeys }: Props) {
+  // Fonction pour recharger les touches depuis l'API
+  const reloadKeys = async () => {
+    try {
+      const res = await fetch(`/api/admin/phones/${phone.id}/keys`);
+      const data = await res.json();
+      if (data.ok) {
+        // Convertir les touches de l'API au format attendu
+        const reloadedKeys = data.data.map((k: any) => ({
+          id: k.id,
+          keyIndex: k.keyIndex,
+          account: k.account || "Account1",
+          description: k.description || "",
+          mode: k.mode,
+          locked: k.locked,
+          value: k.value || "",
+        }));
+        
+        // Reconstruire le tableau keys avec les touches rechargées
+        const filled = [...reloadedKeys];
+        for (let i = filled.length; i < totalCapacity; i++) filled.push(emptyKey(i + 1));
+        const sortedKeys = filled.sort((a, b) => a.keyIndex - b.keyIndex);
+        
+        setKeys(sortedKeys);
+        
+        // Mettre à jour enabled et vmpkEnabled
+        const hasConfiguredKeys = sortedKeys.some(k => k.mode !== "DEFAULT" && k.mode !== "NONE");
+        setEnabled(hasConfiguredKeys);
+        
+        if (supportsVmpk) {
+          const hasConfiguredVmpk = sortedKeys.some(k => 
+            k.keyIndex > physicalCapacity && 
+            k.mode !== "DEFAULT" && 
+            k.mode !== "NONE"
+          );
+          setVmpkEnabled(hasConfiguredVmpk);
+        }
+      }
+    } catch (error) {
+      console.error("Erreur rechargement touches:", error);
+    }
+  };
   const physicalCapacity = phone.phoneModel.lineCapacity ?? 0;
   const modelCode = phone.phoneModel.modelCode?.toUpperCase() ?? "";
   const isGrandstream = phone.phoneModel.vendor === "GRANDSTREAM";
@@ -151,7 +192,7 @@ export function TabKeys({ phone, initialKeys }: Props) {
         setVmpkEnabled(hasConfiguredVmpk);
       }
     }
-  }, [keys, enabled, vmpkEnabled, supportsVmpk, physicalCapacity]);
+  }, [keys, supportsVmpk, physicalCapacity]); // removed enabled and vmpkEnabled from dependencies
 
   function selectAll() {
     setKeys(prev => prev.map(k => ({ ...k, mode: "BLF" })));
@@ -181,7 +222,13 @@ export function TabKeys({ phone, initialKeys }: Props) {
         }),
       });
       const json = await res.json();
-      setMsg(json.ok ? { ok: true, text: "Sauvegardé & appliqué." } : { ok: false, text: json.error ?? "Erreur." });
+      if (json.ok) {
+        setMsg({ ok: true, text: "Sauvegardé & appliqué." });
+        // Recharger les touches depuis l'API pour synchroniser avec la DB
+        await reloadKeys();
+      } else {
+        setMsg({ ok: false, text: json.error ?? "Erreur." });
+      }
     } catch {
       setMsg({ ok: false, text: "Erreur réseau." });
     } finally {
