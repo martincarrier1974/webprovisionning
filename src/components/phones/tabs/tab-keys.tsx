@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 type Key = {
   id?: string;
@@ -133,6 +133,26 @@ export function TabKeys({ phone, initialKeys }: Props) {
     setKeys(prev => prev.map((k, i) => i === index ? { ...k, [field]: val } : k));
   }
 
+  // Mettre à jour 'enabled' automatiquement quand des touches sont configurées
+  useEffect(() => {
+    const hasConfiguredKeys = keys.some(k => k.mode !== "DEFAULT" && k.mode !== "NONE");
+    if (hasConfiguredKeys !== enabled) {
+      setEnabled(hasConfiguredKeys);
+    }
+    
+    // Mettre à jour vmpkEnabled automatiquement si une touche VMPK est configurée
+    if (supportsVmpk) {
+      const hasConfiguredVmpk = keys.some(k => 
+        k.keyIndex > physicalCapacity && 
+        k.mode !== "DEFAULT" && 
+        k.mode !== "NONE"
+      );
+      if (hasConfiguredVmpk !== vmpkEnabled) {
+        setVmpkEnabled(hasConfiguredVmpk);
+      }
+    }
+  }, [keys, enabled, vmpkEnabled, supportsVmpk, physicalCapacity]);
+
   function selectAll() {
     setKeys(prev => prev.map(k => ({ ...k, mode: "BLF" })));
   }
@@ -147,15 +167,18 @@ export function TabKeys({ phone, initialKeys }: Props) {
     try {
       // N'envoyer que les touches pertinentes selon ce qui est activé
       // Si physicalCapacity est 0/null (modèle sans capacité définie), envoyer toutes les touches configurées
-      const activeKeys = vmpkEnabled
-        ? keys
-        : physicalCapacity > 0
-          ? keys.slice(0, physicalCapacity)
-          : keys.filter(k => k.mode !== "DEFAULT" && k.mode !== "NONE");
+      
+      // CORRECTION: Toujours envoyer toutes les touches configurées pour éviter la perte de données
+      // Filtrer seulement les touches qui ont réellement été configurées (mode non DEFAULT/NONE)
+      const activeKeys = keys.filter(k => k.mode !== "DEFAULT" && k.mode !== "NONE");
+      
       const res = await fetch(`/api/admin/phones/${phone.id}/keys`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ enabled, keys: activeKeys }),
+        body: JSON.stringify({ 
+          enabled: activeKeys.length > 0, // Activer seulement si au moins une touche configurée
+          keys: activeKeys 
+        }),
       });
       const json = await res.json();
       setMsg(json.ok ? { ok: true, text: "Sauvegardé & appliqué." } : { ok: false, text: json.error ?? "Erreur." });
