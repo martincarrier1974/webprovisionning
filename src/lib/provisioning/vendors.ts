@@ -295,7 +295,6 @@ function buildBaseEntries(vendor: SupportedVendor, context: PhoneProvisioningCon
     ["P237", `${baseUrl}/api/provisioning/grandstream/`], // Config server base path (phone appends cfgMAC.xml)
     ["P212", grandstreamUpgradeViaCode(baseUrl)], // 1=HTTP 2=HTTPS - requis pour télécharger cfg depuis P237
     ["P145", "0"],                                // Ne pas laisser DHCP Option 43/66 écraser l'URL de provision
-    ["P144", "1"],                                // Always override existing settings (overwrite mode)
     // ── NTP / Time / Language ─────────────────────────────────────────────
     ["P213", "1440"],                             // Intervalle sync (min) - selon firmware
     ["P64", "-5"],                                // Timezone offset (EST)
