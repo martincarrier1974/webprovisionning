@@ -119,7 +119,7 @@ export async function GET(
   return new NextResponse(content, {
     status: 200,
     headers: {
-      "content-type": "application/xml; charset=utf-8",
+      "content-type": "text/plain; charset=utf-8",
       "x-provisioning-vendor": "grandstream",
       "x-device-mac": normalizedMac,
       "x-provisioning-rules": String(resolved.resolvedEntries.length),
