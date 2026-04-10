@@ -294,9 +294,7 @@ function buildBaseEntries(vendor: SupportedVendor, context: PhoneProvisioningCon
     // Provisioning
     ["P237", `${baseUrl}/api/provisioning/grandstream/`], // Config server base path (phone appends cfgMAC.xml)
     ["P212", grandstreamUpgradeViaCode(baseUrl)], // 1=HTTP 2=HTTPS - requis pour télécharger cfg depuis P237
-    ["P144", "1"],                                // Download and process all available config files
-    ["P145", "1"],                                // Use config file prefix/postfix (allow DHCP option processing)
-    ["P194", "1"],                                // Auto update firmware/config on reboot
+    ["P145", "0"],                                // Ne pas laisser DHCP Option 43/66 écraser l'URL de provision
     // ── NTP / Time / Language ─────────────────────────────────────────────
     ["P213", "1440"],                             // Intervalle sync (min) - selon firmware
     ["P64", "-5"],                                // Timezone offset (EST)
@@ -339,7 +337,7 @@ function buildBaseEntries(vendor: SupportedVendor, context: PhoneProvisioningCon
     ["P4", "0"],     // 802.1p Priority Value
     // Display / LCD
     ["P234", yesNo(true)],
-    ["P240", "0"],           // Disable config file prefix/postfix requirement
+    ["P240", yesNo(true)],
     ["P96", "1"],    // Active backlight timeout (minutes)
     ["P324", "100"], // LCD brightness active
     ["P325", "60"],  // LCD brightness idle
