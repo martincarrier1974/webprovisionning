@@ -332,22 +332,6 @@ function buildBaseEntries(vendor: SupportedVendor, context: PhoneProvisioningCon
     ["P1604", "0"],  // LDAP Sort Results
     ["P1605", "0"],  // LDAP Lookup Incoming Calls
     ["P1606", "0"],  // LDAP Lookup Outgoing Calls
-    // Settings > Call Features
-    ["P1400", "1"],  // Enable Incoming Call Popup
-    ["P1401", "0"],  // Allow Incoming Call before Ringing
-    ["P1402", "0"],  // Enable Auto Redial
-    ["P1403", "20"], // Auto Redial Interval (s)
-    ["P1404", "10"], // Auto Redial Times
-    ["P1405", "1"],  // Enable Busy Tone on Remote Disconnect
-    ["P1407", "0"],  // Enable Direct IP Call
-    ["P1408", "1"],  // Enable DND Feature
-    ["P1410", "0"],  // Enable Missed Call Notification
-    ["P1411", "0"],  // Hide BLF Remote Status
-    ["P1412", "0"],  // Ring for Call Waiting
-    ["P1413", "0"],  // Show SIP Error Response
-    ["P1414", "1"],  // Onhook Dial Barging
-    ["P1415", "1"],  // Predictive Dialing Feature
-    ["P1418", "10"], // Instant Message Popup Timeout During Call (s)
     // Network - VLAN (disabled by default; overridden by phone-level provisioning rules)
     ["P3", "0"],     // VLAN Tag (802.1Q)
     ["P4", "0"],     // 802.1p Priority Value
